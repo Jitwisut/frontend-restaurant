@@ -1,4 +1,5 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
 ## Getting Started
@@ -38,3 +39,6 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 =======
 # frontend-restaurant
 >>>>>>> 2998918f9005927ffc76527e94d51e7e977e5dd9
+=======
+# frontend-restaurant
+>>>>>>> d92b738c13ef6bdf434bad78ed9f8b27710af0e3
