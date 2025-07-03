@@ -8,6 +8,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import axios from "axios";
+import path from "path";
 
 /* -------------------- Constants -------------------- */
 const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL;
@@ -19,7 +20,39 @@ export default function KitchenDashboard() {
   /* identity / state */
   const [profile, setProfile] = useState(null); // { username, role, wsToken? }
   const [loading, setLoading] = useState(true);
+  /* ---------- AUDIO ---------- */
   const audioRef = useRef(null);
+  const [audioReady, setAudioReady] = useState(false);
+  const pendingPlays = useRef(0); // คิวเสียงที่เข้าก่อนปลดล็อก
+  /* สร้าง Audio ครั้งเดียวเมื่อ mount */
+  useEffect(() => {
+    audioRef.current = new Audio("/sounds/notification.mp3");
+    audioRef.current.volume = 0.7;
+  }, []);
+
+  /* ปลดล็อกเสียงเมื่อมี gesture แรก */
+  const unlockAudio = useCallback(() => {
+    if (!audioRef.current) return;
+    audioRef.current
+      .play() // เล่น 1 เฟรม → ถือว่ามี gesture
+      .then(() => {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        setAudioReady(true);
+        // เล่นเสียงที่สะสมไว้ (ถ้ามี order มาก่อน)
+        while (pendingPlays.current-- > 0) {
+          audioRef.current.play().catch(console.error);
+        }
+        window.removeEventListener("pointerdown", unlockAudio);
+      })
+      .catch(console.error);
+  }, []);
+
+  /* ผูก listener ครั้งเดียว */
+  useEffect(() => {
+    window.addEventListener("pointerdown", unlockAudio, { once: true });
+    return () => window.removeEventListener("pointerdown", unlockAudio);
+  }, [unlockAudio]);
   /* STEP 1: sessionStorage > STEP 2: /profile > STEP 3: prompt */
   useEffect(() => {
     const cached = sessionStorage.getItem("kitchenProfile");
@@ -84,7 +117,7 @@ export default function KitchenDashboard() {
       try {
         const d = JSON.parse(e.data);
         if (d.type === "order") {
-          audioRef.current.play(); // เล่นเสียงแจ้งเตือน
+          playNotificationSound(); //เล่นเสียงการแจ้งเตือน
           setQueue((q) => [
             ...q,
             {
@@ -108,6 +141,25 @@ export default function KitchenDashboard() {
       retryRef.current.timer = setTimeout(connect, delay);
     };
   }, [profile]);
+
+  // ฟังก์ชันเล่นเสียงแจ้งเตือน
+  const playNotificationSound = () => {
+    // สร้าง Audio object ใหม่ทุกครั้ง
+    const audio = new Audio("/sounds/notification.mp3");
+    // ตั้งค่าเสียง
+    audio.volume = 0.7; // ระดับเสียง 0-1
+    audio.preload = "auto";
+
+    // เล่นเสียง
+    audio
+      .play()
+      .then(() => {
+        console.log("เล่นเสียงแจ้งเตือนสำเร็จ");
+      })
+      .catch((error) => {
+        console.error("ไม่สามารถเล่นเสียงได้:", error);
+      });
+  };
 
   useEffect(() => {
     connect();
@@ -141,7 +193,7 @@ export default function KitchenDashboard() {
           {connected ? "● Online" : "● Offline"}
         </span>
       </header>
-      <audio ref={audioRef} src="/sound/sound.mp4" preload="auto" />
+
       {queue.length === 0 ? (
         <p className="text-gray-500 mt-16 text-center">ยังไม่มีออร์เดอร์</p>
       ) : (
