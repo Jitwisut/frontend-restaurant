@@ -53,8 +53,6 @@ const AdminUserManagement = () => {
   const baseurl = process.env.NEXT_PUBLIC_BACKEND_URL;
   useEffect(() => {
     const admin = async () => {
-      const url =
-        "https://influential-denice-jitwisutthobut-4bb0d3cf.koyeb.app";
       try {
         const res = await axios.get(`${baseurl}/middleware/admin`, {
           withCredentials: true,
@@ -78,7 +76,6 @@ const AdminUserManagement = () => {
   }, [router]);
 
   const fetchUser = async () => {
-    const url = "https://influential-denice-jitwisutthobut-4bb0d3cf.koyeb.app";
     try {
       const res = await axios.get(`${baseurl}/admin/getuser`, {
         withCredentials: true,
@@ -95,10 +92,10 @@ const AdminUserManagement = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    const url = "https://influential-denice-jitwisutthobut-4bb0d3cf.koyeb.app";
+
     try {
       const res = await axios.post(
-        `${url}/admin/createuser`,
+        `${baseurl}/admin/createuser`,
         {
           username,
           password,
@@ -132,7 +129,6 @@ const AdminUserManagement = () => {
   };
 
   const updateUser = async () => {
-    const url = "https://influential-denice-jitwisutthobut-4bb0d3cf.koyeb.app";
     try {
       const res = await axios.post(
         `${baseurl}/admin/updateuser`,

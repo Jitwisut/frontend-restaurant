@@ -28,8 +28,6 @@ export default function Home() {
     setLoading(true);
     setError("");
 
-    const url = "https://influential-denice-jitwisutthobut-4bb0d3cf.koyeb.app";
-
     try {
       const res = await axios.post(`${baseurl}/auth/signin`, user, {
         withCredentials: true,
