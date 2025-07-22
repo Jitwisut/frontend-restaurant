@@ -61,12 +61,15 @@ const AdminUserManagement = () => {
       } catch (error) {
         if (error.response?.status === 401) {
           console.log("ยังไม่ได้ login");
+          console.warn("Error:", error);
           router.push("/");
         } else if (error.response?.status === 403) {
           console.log("ไม่ใช่ admin");
+          console.warn("Error:", error);
           router.push("/");
         } else {
           console.log("เกิดข้อผิดพลาดอื่น:", error);
+          console.warn("Error:", error);
         }
       }
     };
