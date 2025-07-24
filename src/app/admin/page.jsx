@@ -53,8 +53,10 @@ const AdminUserManagement = () => {
   const baseurl = process.env.NEXT_PUBLIC_BACKEND_URL;
   useEffect(() => {
     const admin = async () => {
+      const token = sessionStorage.getItem("auth");
       try {
         const res = await axios.get(`${baseurl}/middleware/admin`, {
+          headers: { Authorization: `Bearer ${token}` },
           withCredentials: true,
         });
         console.log("Success");

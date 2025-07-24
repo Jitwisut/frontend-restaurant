@@ -34,6 +34,7 @@ export default function Home() {
       });
 
       if (res.status === 200) {
+        sessionStorage.setItem("auth", res.data.token);
         router.push(res.data.redirectpath);
       }
     } catch (error) {
