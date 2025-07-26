@@ -13,7 +13,7 @@ export default function KitchenDashboard() {
   /* identity / state */
   const [profile, setProfile] = useState(null); // { username, role, wsToken? }
   const [loading, setLoading] = useState(true);
-
+  const [tablenumber, setTablenumber] = useState("");
   /* ---------- AUDIO ---------- */
   const audioRef = useRef(null);
   const [audioReady, setAudioReady] = useState(false);
@@ -86,8 +86,8 @@ export default function KitchenDashboard() {
 
   /* STEP 1: sessionStorage > STEP 2: /profile > STEP 3: prompt */
   useEffect(() => {
-    const cached = sessionStorage.getItem("kitchenProfile");
-    if (cached) {
+    const token = sessionStorage.getItem("kitchenProfile");
+    if (token) {
       try {
         setProfile(JSON.parse(cached));
         setLoading(false);
@@ -98,13 +98,15 @@ export default function KitchenDashboard() {
     }
 
     axios
-      .get(`${API_BASE}/profile/`, { withCredentials: true })
+      .get(`${API_BASE}/profile/kitchenprofile`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
       .then((r) => {
         const p = {
           username: r.data.username,
           role: r.data.role,
-          wsToken: r.data.wsToken,
         };
+
         sessionStorage.setItem("kitchenProfile", JSON.stringify(p));
         setProfile(p);
       })

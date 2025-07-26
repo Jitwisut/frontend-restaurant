@@ -34,7 +34,12 @@ export default function Home() {
       });
 
       if (res.status === 200) {
-        sessionStorage.setItem("auth", res.data.token);
+        if (res.data.redirectpath === "/kitchen") {
+          sessionStorage.setItem("kitchenProfile", res.data.token);
+        } else {
+          sessionStorage.setItem("auth", res.data.token);
+        }
+
         router.push(res.data.redirectpath);
       }
     } catch (error) {
