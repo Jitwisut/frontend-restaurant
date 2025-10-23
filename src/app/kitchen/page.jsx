@@ -223,7 +223,7 @@ export default function KitchenDashboard() {
             const newOrder = {
               orderId: data.orderId || `order_${Date.now()}`,
               items: data.menu?.items || data.items || [],
-              tableNumber: data.menu?.items[0].table_number,
+              tableNumber: data.table_number,
               timestamp: new Date().toLocaleTimeString("th-TH"),
               status: "pending",
             };
@@ -468,6 +468,7 @@ export default function KitchenDashboard() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {queue.map((order) => (
+            
             <div
               key={order.orderId}
               className={`bg-white rounded-lg shadow-sm border-l-4 p-4 transition-all hover:shadow-md ${
@@ -476,10 +477,12 @@ export default function KitchenDashboard() {
                   : "border-l-blue-400"
               }`}
             >
+              
               {/* Order Header */}
               <div className="flex justify-between items-start mb-3">
                 <div>
                   <h3 className="font-bold text-lg text-gray-800">
+                    
                     🪑 โต๊ะ {order.tableNumber}
                   </h3>
                   <p className="text-sm text-gray-500">
