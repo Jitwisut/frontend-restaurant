@@ -29,12 +29,12 @@ import {
 // ================================
 const getEnvVar = (key, fallback = null) => {
   const value = process.env[key];
-  
+
   // Debug: แสดงค่าที่โหลดได้
-  if (typeof window === 'undefined') {
-    console.log(`[ENV] ${key}:`, value || 'NOT SET');
+  if (typeof window === "undefined") {
+    console.log(`[ENV] ${key}:`, value || "NOT SET");
   }
-  
+
   if (!value && !fallback) {
     throw new Error(`Environment variable ${key} is required but not set`);
   }
@@ -42,8 +42,8 @@ const getEnvVar = (key, fallback = null) => {
 };
 
 // ใส่ URL ของ backend ที่นี่ หรือใช้ .env.local
-const API_BASE = getEnvVar("NEXT_PUBLIC_BACKEND_URL", "http://localhost:4000");
-const WS_BASE = getEnvVar("NEXT_PUBLIC_API_WS", "ws://localhost:4000");
+const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL;
+const WS_BASE = process.env.NEXT_PUBLIC_API_WS;
 const MAX_RECONNECT_ATTEMPTS = 5;
 const RECONNECT_DELAY = 3000;
 const PING_INTERVAL = 30000;
@@ -109,7 +109,10 @@ export default function OrderPage() {
         if (reconnectAttemptsRef.current < MAX_RECONNECT_ATTEMPTS) {
           reconnectAttemptsRef.current++;
           setWsStatus("reconnecting");
-          reconnectTimeoutRef.current = setTimeout(connectWebSocket, RECONNECT_DELAY);
+          reconnectTimeoutRef.current = setTimeout(
+            connectWebSocket,
+            RECONNECT_DELAY
+          );
         } else {
           setWsStatus("error");
           toast.error("ไม่สามารถเชื่อมต่อได้ กรุณารีเฟรช");
@@ -125,7 +128,7 @@ export default function OrderPage() {
         try {
           const msg = JSON.parse(e.data);
           console.log("WS msg:", msg);
-          
+
           // ✅ รับ system message เมื่อส่ง order สำเร็จ
           if (msg.type === "system") {
             // เช็คว่าเป็นการตอบกลับ order หรือไม่
@@ -135,26 +138,26 @@ export default function OrderPage() {
                 clearTimeout(orderTimeoutRef.current);
                 orderTimeoutRef.current = undefined;
               }
-              
+
               // ล้างตะกร้า
               setCart([]);
               setSending(false);
-              
+
               // แสดง success เฉพาะเมื่อ backend ตอบกลับแล้ว
-              toast.success("✅ ส่งคำสั่งอาหารไปยังครัวแล้ว", { 
-                duration: 4000 
+              toast.success("✅ ส่งคำสั่งอาหารไปยังครัวแล้ว", {
+                duration: 4000,
               });
             } else if (msg.message.includes("เชื่อมต่อสำเร็จ")) {
               // แสดงข้อความเชื่อมต่อ
               console.log("Connected:", msg.message);
             } else {
               // system message อื่นๆ
-              toast(msg.message, { 
-                icon: "ℹ️", 
-                duration: 3000 
+              toast(msg.message, {
+                icon: "ℹ️",
+                duration: 3000,
               });
             }
-          } 
+          }
           // ❌ รับ error message
           else if (msg.type === "error") {
             // ล้าง timeout
@@ -162,18 +165,21 @@ export default function OrderPage() {
               clearTimeout(orderTimeoutRef.current);
               orderTimeoutRef.current = undefined;
             }
-            
+
             setSending(false);
-            
+
             // แสดง error ตามที่ backend ส่งมา
             if (msg.message.includes("ไม่พบครัว")) {
-              toast.error("ครัวยังไม่พร้อมรับออร์เดอร์\n• แจ้งพนักงาน\n• หรือลองใหม่อีกครั้ง", { 
-                duration: 6000
-              });
+              toast.error(
+                "ครัวยังไม่พร้อมรับออร์เดอร์\n• แจ้งพนักงาน\n• หรือลองใหม่อีกครั้ง",
+                {
+                  duration: 6000,
+                }
+              );
             } else {
               toast.error(msg.message, { duration: 4000 });
             }
-          } 
+          }
           // 🏓 Pong
           else if (msg.type === "pong") {
             console.log("pong received");
@@ -184,11 +190,16 @@ export default function OrderPage() {
               accepted: "ครัวรับออร์เดอร์แล้ว",
               preparing: "กำลังเตรียมอาหาร",
               done: "อาหารพร้อมเสิร์ฟ",
-              rejected: "ครัวปฏิเสธออร์เดอร์"
+              rejected: "ครัวปฏิเสธออร์เดอร์",
             };
             toast(statusText[msg.status] || "สถานะอัพเดท", {
-              icon: msg.status === "done" ? "🍽️" : msg.status === "rejected" ? "❌" : "👨‍🍳",
-              duration: 5000
+              icon:
+                msg.status === "done"
+                  ? "🍽️"
+                  : msg.status === "rejected"
+                  ? "❌"
+                  : "👨‍🍳",
+              duration: 5000,
             });
           }
         } catch (err) {
@@ -204,7 +215,8 @@ export default function OrderPage() {
   useEffect(() => {
     connectWebSocket();
     return () => {
-      if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+      if (reconnectTimeoutRef.current)
+        clearTimeout(reconnectTimeoutRef.current);
       if (pingIntervalRef.current) clearInterval(pingIntervalRef.current);
       if (orderTimeoutRef.current) clearTimeout(orderTimeoutRef.current);
       if (wsRef.current) wsRef.current.close();
@@ -225,26 +237,36 @@ export default function OrderPage() {
 
         if (tableRes.status === "fulfilled" && tableRes.value.status === 200) {
           const tableData = tableRes.value.data.table;
-          
+
           // รองรับทั้ง table_number และ number
           const tableNumber = tableData?.table_number || tableData?.number;
-          
+
           // แปลงเป็น string เสมอ เพื่อให้แน่ใจว่าเป็นรูปแบบเดียวกัน
           const tableNumberStr = tableNumber ? String(tableNumber) : null;
-          
+
           // เซ็ต table พร้อมทำให้แน่ใจว่ามี table_number เป็น string
           setTable({
             ...tableData,
-            table_number: tableNumberStr
+            table_number: tableNumberStr,
           });
-          
+
           // Debug: แสดงข้อมูลโต๊ะที่โหลดได้
           console.log("[TABLE] Loaded:", tableData);
-          console.log("[TABLE] Table Number (original):", tableNumber, typeof tableNumber);
-          console.log("[TABLE] Table Number (converted):", tableNumberStr, typeof tableNumberStr);
-          
+          console.log(
+            "[TABLE] Table Number (original):",
+            tableNumber,
+            typeof tableNumber
+          );
+          console.log(
+            "[TABLE] Table Number (converted):",
+            tableNumberStr,
+            typeof tableNumberStr
+          );
+
           if (!tableNumberStr) {
-            console.error("[TABLE] ERROR: No table_number found in API response");
+            console.error(
+              "[TABLE] ERROR: No table_number found in API response"
+            );
             toast.error("ข้อมูลโต๊ะไม่ครบถ้วน กรุณาแจ้งพนักงาน");
           }
         } else {
@@ -274,7 +296,8 @@ export default function OrderPage() {
     const online = () => {
       setIsOnline(true);
       toast.success("กลับมาออนไลน์แล้ว", { icon: "🌐" });
-      if (wsStatus === "error" || wsStatus === "disconnected") connectWebSocket();
+      if (wsStatus === "error" || wsStatus === "disconnected")
+        connectWebSocket();
     };
     const offline = () => {
       setIsOnline(false);
@@ -298,7 +321,8 @@ export default function OrderPage() {
   }, [sessionHash]);
 
   useEffect(() => {
-    if (cart.length) localStorage.setItem(`cart_${sessionHash}`, JSON.stringify(cart));
+    if (cart.length)
+      localStorage.setItem(`cart_${sessionHash}`, JSON.stringify(cart));
     else localStorage.removeItem(`cart_${sessionHash}`);
   }, [cart, sessionHash]);
 
@@ -340,7 +364,10 @@ export default function OrderPage() {
     [cart]
   );
 
-  const totalItems = useMemo(() => cart.reduce((sum, i) => sum + i.qty, 0), [cart]);
+  const totalItems = useMemo(
+    () => cart.reduce((sum, i) => sum + i.qty, 0),
+    [cart]
+  );
 
   const addToCart = (item) => {
     // เช็คว่ามีข้อมูลโต๊ะหรือไม่
@@ -348,7 +375,7 @@ export default function OrderPage() {
       toast.error("ไม่พบข้อมูลโต๊ะ กรุณารีเฟรชหน้าใหม่");
       return;
     }
-    
+
     setCart((prev) => {
       const idx = prev.findIndex((x) => x.item.id === item.id);
       if (idx !== -1)
@@ -408,17 +435,17 @@ export default function OrderPage() {
     if (!isOnline) return toast.error("ไม่มีอินเทอร์เน็ต");
     if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN)
       return toast.error("ยังเชื่อมต่อไม่สำเร็จ กรุณารอสักครู่");
-    
+
     // เช็คว่ามีเลขโต๊ะหรือไม่
     if (!table?.table_number) {
       return toast.error("ไม่พบข้อมูลโต๊ะ กรุณารีเฟรชหน้าใหม่");
     }
 
     setSending(true);
-    
+
     // แปลง table_number เป็น string หรือ number (แล้วแต่ backend ต้องการ)
     const tableNumber = String(table.table_number);
-    
+
     // สร้าง order payload ตาม backend format
     const orderPayload = {
       type: "order",
@@ -435,20 +462,19 @@ export default function OrderPage() {
 
     console.log("[ORDER] Sending:", orderPayload);
     console.log("[ORDER] Table Number:", tableNumber, typeof tableNumber);
-    
+
     try {
       // ส่ง order ไปยัง WebSocket
       wsRef.current.send(JSON.stringify(orderPayload));
-      
+
       // ตั้ง timeout เผื่อ backend ไม่ตอบกลับ (5 วินาที)
       orderTimeoutRef.current = setTimeout(() => {
         setSending(false);
-        
+
         toast.error("ไม่ได้รับการตอบกลับจากระบบ\nกรุณาแจ้งพนักงาน", {
-          duration: 5000
+          duration: 5000,
         });
       }, 5000);
-      
     } catch (error) {
       console.error("[ORDER] Send error:", error);
       setSending(false);
@@ -482,7 +508,9 @@ export default function OrderPage() {
         ) : wsStatus === "reconnecting" ? (
           <>
             <Loader2 className="h-4 w-4 text-yellow-600 animate-spin" />
-            <span className="font-medium text-yellow-600">กำลังเชื่อมต่อ...</span>
+            <span className="font-medium text-yellow-600">
+              กำลังเชื่อมต่อ...
+            </span>
           </>
         ) : wsStatus === "error" ? (
           <>
@@ -652,7 +680,9 @@ export default function OrderPage() {
                                 : "bg-white/80 text-gray-600 hover:bg-red-50"
                             }`}
                             aria-label={
-                              isFavorite ? "ลบออกจากรายการโปรด" : "เพิ่มในรายการโปรด"
+                              isFavorite
+                                ? "ลบออกจากรายการโปรด"
+                                : "เพิ่มในรายการโปรด"
                             }
                           >
                             <Heart
