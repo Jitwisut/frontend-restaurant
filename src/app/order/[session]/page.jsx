@@ -4,6 +4,7 @@ import axios from "axios";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import toast, { Toaster } from "react-hot-toast";
+import OrdersModal from "./components/OrdersModal";
 import {
   ShoppingCart,
   Plus,
@@ -53,6 +54,7 @@ const ORDER_SUBMIT_TIMEOUT = 500;
 // MAIN COMPONENT
 // ================================
 export default function OrderPage() {
+  const [modalOpen, setModalOpen] = useState(false);
   const { session: sessionHash } = useParams();
   const router = useRouter();
   const wsRef = useRef(null);
@@ -543,6 +545,7 @@ export default function OrderPage() {
                 </div>
               </div>
             </div>
+
             <div className="relative">
               <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-2 lg:p-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer group">
                 <ShoppingCart className="h-5 w-5 lg:h-6 lg:w-6 text-white" />
@@ -566,6 +569,23 @@ export default function OrderPage() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full pl-10 pr-3 py-2 lg:pl-12 lg:py-3 rounded-2xl border border-gray-200 focus:border-purple-400 focus:ring-2 lg:focus:ring-4 focus:ring-purple-100 outline-none transition-all bg-white/70 backdrop-blur-sm text-sm lg:text-base"
                 aria-label="ค้นหาเมนู"
+              />
+            </div>
+            <div className="flex items-center justify-between">
+              {/* ปุ่มรายการอาหาร */}
+              <button
+                onClick={() => setModalOpen(true)}
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-400 via-pink-500 to-pink-600 hover:from-orange-500 hover:via-pink-600 hover:to-pink-700 px-3 py-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 shrink-0"
+              >
+                <ChefHat className="h-4 w-4 text-white shrink-0  justify-between" />
+                <span className="text-white font-bold text-xs whitespace-nowrap ">
+                  รายการอาหาร
+                </span>
+              </button>
+              <OrdersModal
+                isOpen={modalOpen}
+                onClose={() => setModalOpen(false)}
+                orders={[]}
               />
             </div>
             <div className="flex items-center space-x-2 lg:space-x-3">
