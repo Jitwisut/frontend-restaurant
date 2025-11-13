@@ -25,7 +25,7 @@ export default function OrdersModal({ isOpen, onClose, orders = [] }) {
 
   // ถ้าไม่เปิด ไม่ต้อง render
   if (!isOpen) return null;
-
+                
   const modalContent = (
     <AnimatePresence>
       {isOpen && (

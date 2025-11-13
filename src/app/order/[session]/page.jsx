@@ -273,7 +273,7 @@ export default function OrderPage() {
           }
         } else {
           toast.error("QR Code ไม่ถูกต้องหรือหมดอายุ");
-          setTimeout(() => router.replace("/"), 2000);
+          setTimeout(() => router.replace("/table-closed"), 1000);
           return;
         }
 
