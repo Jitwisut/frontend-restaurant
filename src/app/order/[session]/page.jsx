@@ -25,23 +25,6 @@ import {
   Loader2,
 } from "lucide-react";
 
-// ================================
-// CONFIGURATION & VALIDATION
-// ================================
-const getEnvVar = (key, fallback = null) => {
-  const value = process.env[key];
-
-  // Debug: แสดงค่าที่โหลดได้
-  if (typeof window === "undefined") {
-    console.log(`[ENV] ${key}:`, value || "NOT SET");
-  }
-
-  if (!value && !fallback) {
-    throw new Error(`Environment variable ${key} is required but not set`);
-  }
-  return value || fallback;
-};
-
 // ใส่ URL ของ backend ที่นี่ หรือใช้ .env.local
 const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL;
 const WS_BASE = process.env.NEXT_PUBLIC_API_WS;
@@ -75,7 +58,8 @@ export default function OrderPage() {
   const [favorites, setFavorites] = useState(new Set());
   const [sortBy, setSortBy] = useState("default");
   const [showFilters, setShowFilters] = useState(false);
-
+  const [tablenumber, setTablenumber] = useState("");
+  const [order, setOrder] = useState();
   // ================================
   // WEBSOCKET
   // ================================
@@ -242,7 +226,7 @@ export default function OrderPage() {
 
           // รองรับทั้ง table_number และ number
           const tableNumber = tableData?.table_number || tableData?.number;
-
+          setTablenumber(Number(tableNumber));
           // แปลงเป็น string เสมอ เพื่อให้แน่ใจว่าเป็นรูปแบบเดียวกัน
           const tableNumberStr = tableNumber ? String(tableNumber) : null;
 
@@ -483,7 +467,25 @@ export default function OrderPage() {
       toast.error("เกิดข้อผิดพลาดในการส่งคำสั่ง");
     }
   };
-
+  const fetchorder = async () => {
+    setLoading(true);
+    const number = tablenumber;
+    try {
+      const data = await axios.post(`${API_BASE}/tables/orderhistory`, {
+        table_number: number,
+      });
+      setOrder(data.data.order);
+      console.log(data);
+    } catch (err) {
+      console.error(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  const handleOpenModal = async () => {
+    await fetchorder(); // fetch ข้อมูลก่อน
+    setModalOpen(true); // แล้วค่อยเปิด Modal
+  };
   // ================================
   // RENDER
   // ================================
@@ -552,7 +554,7 @@ export default function OrderPage() {
             <div className="flex items-center gap-2 lg:gap-3">
               {/* ปุ่มรายการอาหาร */}
               <button
-                onClick={() => setModalOpen(true)}
+                onClick={() => handleOpenModal()}
                 className="inline-flex items-center gap-2 bg-gradient-to-r from-orange-400 via-pink-500 to-pink-600 hover:from-orange-500 hover:via-pink-600 hover:to-pink-700 px-3 py-2 rounded-full shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 active:scale-95 flex-shrink-0"
               >
                 <ChefHat className="h-4 w-4 text-white flex-shrink-0" />
@@ -620,12 +622,7 @@ export default function OrderPage() {
       <OrdersModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
-        orders={cart.map((c) => ({
-          id: c.item.id,
-          menu_name: c.item.name,
-          price: c.item.price,
-          quantity: c.qty,
-        }))}
+        orders={order}
       />
 
       <div className="max-w-7xl mx-auto px-4 py-4 lg:py-8 grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
