@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import toast, { Toaster } from "react-hot-toast";
 import OrdersModal from "./components/OrdersModal";
+import CartModal from "./components/CartModal";
 import {
   ShoppingCart,
   Plus,
@@ -38,6 +39,7 @@ const ORDER_SUBMIT_TIMEOUT = 500;
 // ================================
 export default function OrderPage() {
   const [modalOpen, setModalOpen] = useState(false);
+  const [cartModalOpen, setCartModalOpen] = useState(false);
   const { session: sessionHash } = useParams();
   const router = useRouter();
   const wsRef = useRef(null);
@@ -183,8 +185,8 @@ export default function OrderPage() {
                 msg.status === "done"
                   ? "🍽️"
                   : msg.status === "rejected"
-                  ? "❌"
-                  : "👨‍🍳",
+                    ? "❌"
+                    : "👨‍🍳",
               duration: 5000,
             });
           }
@@ -386,8 +388,8 @@ export default function OrderPage() {
         i.item.id === id && i.qty + delta <= 0
           ? []
           : i.item.id === id
-          ? [{ ...i, qty: i.qty + delta }]
-          : [i]
+            ? [{ ...i, qty: i.qty + delta }]
+            : [i]
       )
     );
   };
@@ -565,7 +567,10 @@ export default function OrderPage() {
 
               {/* Shopping Cart */}
               <div className="relative flex-shrink-0">
-                <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-2 lg:p-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer group">
+                <div
+                  onClick={() => setCartModalOpen(true)}
+                  className="bg-gradient-to-r from-purple-500 to-pink-500 p-2 lg:p-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 cursor-pointer group"
+                >
                   <ShoppingCart className="h-5 w-5 lg:h-6 lg:w-6 text-white" />
                   {totalItems > 0 && (
                     <div className="absolute -top-1 -right-1 bg-gradient-to-r from-orange-400 to-red-400 text-white text-xs rounded-full h-5 w-5 lg:h-6 lg:w-6 flex items-center justify-center font-bold shadow-lg animate-pulse">
@@ -604,11 +609,10 @@ export default function OrderPage() {
               </select>
               <button
                 onClick={() => setShowFilters(!showFilters)}
-                className={`p-2 lg:p-3 rounded-2xl border transition-all ${
-                  showFilters
-                    ? "bg-purple-500 text-white border-purple-500"
-                    : "bg-white/70 text-gray-700 border-gray-200 hover:border-purple-400"
-                }`}
+                className={`p-2 lg:p-3 rounded-2xl border transition-all ${showFilters
+                  ? "bg-purple-500 text-white border-purple-500"
+                  : "bg-white/70 text-gray-700 border-gray-200 hover:border-purple-400"
+                  }`}
                 aria-label="แสดง/ซ่อนตัวกรอง"
               >
                 <Filter className="h-4 w-4 lg:h-5 lg:w-5" />
@@ -623,6 +627,20 @@ export default function OrderPage() {
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         orders={order}
+      />
+
+      {/* Cart Modal */}
+      <CartModal
+        isOpen={cartModalOpen}
+        onClose={() => setCartModalOpen(false)}
+        cart={cart}
+        totalPrice={totalPrice}
+        totalItems={totalItems}
+        changeQty={changeQty}
+        submitOrder={submitOrder}
+        sending={sending}
+        isOnline={isOnline}
+        wsStatus={wsStatus}
       />
 
       <div className="max-w-7xl mx-auto px-4 py-4 lg:py-8 grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
@@ -644,11 +662,10 @@ export default function OrderPage() {
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
-                    className={`px-3 py-1 lg:px-4 lg:py-2 rounded-xl lg:rounded-2xl font-medium transition-all duration-300 shadow-md hover:shadow-lg text-sm lg:text-base ${
-                      selectedCategory === cat
-                        ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white"
-                        : "bg-white/80 text-gray-700 hover:bg-purple-50 border border-gray-200 backdrop-blur-sm"
-                    }`}
+                    className={`px-3 py-1 lg:px-4 lg:py-2 rounded-xl lg:rounded-2xl font-medium transition-all duration-300 shadow-md hover:shadow-lg text-sm lg:text-base ${selectedCategory === cat
+                      ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white"
+                      : "bg-white/80 text-gray-700 hover:bg-purple-50 border border-gray-200 backdrop-blur-sm"
+                      }`}
                   >
                     {cat}
                   </button>
@@ -703,11 +720,10 @@ export default function OrderPage() {
                         <div className="flex space-x-1 lg:space-x-2">
                           <button
                             onClick={() => toggleFavorite(item.id)}
-                            className={`p-1 lg:p-2 rounded-full backdrop-blur-sm transition-all duration-300 ${
-                              isFavorite
-                                ? "bg-red-500 text-white shadow-md"
-                                : "bg-white/80 text-gray-600 hover:bg-red-50"
-                            }`}
+                            className={`p-1 lg:p-2 rounded-full backdrop-blur-sm transition-all duration-300 ${isFavorite
+                              ? "bg-red-500 text-white shadow-md"
+                              : "bg-white/80 text-gray-600 hover:bg-red-50"
+                              }`}
                             aria-label={
                               isFavorite
                                 ? "ลบออกจากรายการโปรด"
@@ -715,9 +731,8 @@ export default function OrderPage() {
                             }
                           >
                             <Heart
-                              className={`h-3 w-3 lg:h-4 lg:w-4 ${
-                                isFavorite ? "fill-current" : ""
-                              }`}
+                              className={`h-3 w-3 lg:h-4 lg:w-4 ${isFavorite ? "fill-current" : ""
+                                }`}
                             />
                           </button>
                           <button

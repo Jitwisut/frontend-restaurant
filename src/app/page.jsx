@@ -1,17 +1,111 @@
 "use client";
 import axios from "axios";
-import { use, useState } from "react";
-import { useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import MenuUpload from "./components/menupload";
+import Swal from "sweetalert2";
 const api = process.env.NEXT_PUBLIC_BACKEND_URL;
+
 export default function RestaurantDashboard() {
   const [activeOrders] = useState(12);
   const [availableTables, setAvailable] = useState();
   const [reserved, setReserved] = useState();
   const [tables, setTables] = useState([]);
   const [username, setUsername] = useState("");
+  const [showmenu, setmenushow] = useState(false);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [submitLoading, setSubmitLoading] = useState(false);
+  const [menuData, setMenuData] = useState({
+    name: '',
+    price: '',
+    description: '',
+    category: '',
+    ingredients: '',
+    isAvailable: true
+  });
+
   const router = useRouter();
+
+  // ฟังก์ชันจัดการรูปภาพ
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // ฟังก์ชันส่งฟอร์ม
+  const handleMenuSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitLoading(true);
+
+    try {
+      // สร้าง FormData เพื่อส่งข้อมูลรวมถึงรูปภาพ
+      const formData = new FormData();
+      formData.append('name', menuData.name);
+      formData.append('description', menuData.description);
+      formData.append('price', menuData.price);
+      formData.append('category', menuData.category);
+      formData.append('ingredients', menuData.ingredients || '');
+      formData.append('isAvailable', menuData.isAvailable.toString());
+
+      // เพิ่มรูปภาพ (ถ้ามี)
+      const imageInput = document.querySelector('input[type="file"]');
+      if (imageInput?.files?.[0]) {
+        formData.append('image', imageInput.files[0]);
+      }
+
+      const response = await axios.post(`${api}/admin/upload-menu`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      console.log('Response:', response.data);
+      if (response.status == 200) {
+        Swal.fire({
+          icon: "success",
+          title: "อัพโหลดเมนูสำเร็จ",
+          text: "เมนูใหม่ถูกเพิ่มเข้าระบบแล้ว",
+          timer: 2000,
+          showConfirmButton: false,
+        });
+      }
+      resetMenuForm();
+    } catch (error) {
+      console.error('Error uploading menu:', error);
+      const errorMessage = error?.response?.data?.message || error?.message || 'เกิดข้อผิดพลาดในการเพิ่มเมนู';
+      Swal.fire({
+        icon: "error",
+        title: "เกิดข้อผิดพลาด",
+        text: `${errorMessage}`,
+        timer: 2000,
+        showConfirmButton: false,
+      });
+    } finally {
+      setSubmitLoading(false);
+    }
+  };
+
+  // รีเซ็ตฟอร์ม
+  const resetMenuForm = () => {
+    setmenushow(false);
+    setMenuData({
+      name: '',
+      description: '',
+      price: '',
+      category: '',
+      ingredients: '',
+      isAvailable: true
+    });
+    setImagePreview(null);
+  };
+
   useEffect(() => {
     // ⭐ เรียกใน useEffect เท่านั้น
     const checkAdmin = async () => {
@@ -26,7 +120,7 @@ export default function RestaurantDashboard() {
         console.log("You are admin");
       } catch (error) {
         console.log("You not admin");
-        router.push("/signin"); // ✅ ตอนนี้ router พร้อมแล้ว
+        router.push("/signin");
       }
     };
     const fetchtable = async () => {
@@ -48,7 +142,7 @@ export default function RestaurantDashboard() {
     };
     checkAdmin();
     fetchtable();
-  }, [router]); // ⭐ ใส่ dependency
+  }, [router]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -105,7 +199,7 @@ export default function RestaurantDashboard() {
         <aside className="hidden lg:block w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 min-h-[calc(100vh-73px)]">
           <div className="p-4 space-y-2">
             <div className="px-4 py-2 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              เมนูหลัก
+              เมนูหล ัก
             </div>
             <a
               href="#"
@@ -322,13 +416,12 @@ export default function RestaurantDashboard() {
                     </div>
                     <span
                       className={`text-xs font-semibold px-3 py-1 rounded-full
-                      ${
-                        order.status === "พร้อมเสิร์ฟ"
+                      ${order.status === "พร้อมเสิร์ฟ"
                           ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
                           : order.status === "กำลังทำ"
-                          ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"
-                          : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
-                      }`}
+                            ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"
+                            : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
+                        }`}
                     >
                       {order.status}
                     </span>
@@ -357,17 +450,18 @@ export default function RestaurantDashboard() {
                   href="/tables"
                   className="flex flex-col items-center justify-center gap-2 p-4 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors group"
                 >
-                  <button className="flex flex-col items-center justify-center gap-2 p-4 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors group">
-                    <span className="text-3xl group-hover:scale-110 transition-transform">
-                      🪑
-                    </span>
-                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                      จองโต๊ะ
-                    </span>
-                  </button>
+                  <span className="text-3xl group-hover:scale-110 transition-transform">
+                    🪑
+                  </span>
+                  <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                    จองโต๊ะ
+                  </span>
                 </Link>
 
-                <button className="flex flex-col items-center justify-center gap-2 p-4 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors group">
+                <button
+                  onClick={() => setmenushow(true)}
+                  className="flex flex-col items-center justify-center gap-2 p-4 bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/30 rounded-lg transition-colors group"
+                >
                   <span className="text-3xl group-hover:scale-110 transition-transform">
                     🍜
                   </span>
@@ -415,8 +509,7 @@ export default function RestaurantDashboard() {
                     return (
                       <button
                         key={table.table_number}
-                        className={`aspect-square rounded-lg flex flex-col items-center justify-center gap-1 font-semibold transition-all hover:scale-105
-                   `}
+                        className="aspect-square rounded-lg flex flex-col items-center justify-center gap-1 font-semibold transition-all hover:scale-105"
                       >
                         <span className="text-xl">
                           {isOccupied ? "🔴" : "🟢"}
@@ -507,6 +600,18 @@ export default function RestaurantDashboard() {
           </div>
         </main>
       </div>
+
+      {/* Menu Upload Modal */}
+      <MenuUpload
+        isOpen={showmenu}
+        onClose={resetMenuForm}
+        menuData={menuData}
+        setMenuData={setMenuData}
+        handleSubmit={handleMenuSubmit}
+        handleImageChange={handleImageChange}
+        imagePreview={imagePreview}
+        submitLoading={submitLoading}
+      />
     </div>
   );
 }
