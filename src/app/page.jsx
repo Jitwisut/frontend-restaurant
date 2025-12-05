@@ -6,11 +6,12 @@ import Link from "next/link";
 import MenuUpload from "./components/menupload";
 import Swal from "sweetalert2";
 const api = process.env.NEXT_PUBLIC_BACKEND_URL;
+const ws_base = process.env.NEXT_PUBLIC_API_WS;
 
 export default function RestaurantDashboard() {
   useEffect(() => {
     console.log("🔵 Attempting to connect WebSocket...");
-    wsRef.current = new WebSocket("ws://localhost:4000/ws/admin?role=admin");
+    wsRef.current = new WebSocket(`${ws_base}/ws/admin?role=admin`);
     wsRef.current.onopen = () => {
       console.log("WebSocket connected");
       setConnected(true);
@@ -18,19 +19,18 @@ export default function RestaurantDashboard() {
     wsRef.current.onmessage = (e) => {
       try {
         const data = JSON.parse(e.data);
-        if (data.type === 'call_staff') {
+        if (data.type === "call_staff") {
           Swal.fire({
             title: `🔔 โต๊ะ ${data.table_number} เรียกพนักงาน!`,
             text: `เวลา: ${new Date(data.timestamp).toLocaleTimeString()}`,
-            icon: 'warning',
-            confirmButtonText: 'รับทราบ',
+            icon: "warning",
+            confirmButtonText: "รับทราบ",
           });
         }
       } catch (error) {
-        console.log(error.message)
+        console.log(error.message);
       }
-    }
-
+    };
   }, []);
 
   const wsRef = useRef(null);
@@ -44,12 +44,12 @@ export default function RestaurantDashboard() {
   const [imagePreview, setImagePreview] = useState(null);
   const [submitLoading, setSubmitLoading] = useState(false);
   const [menuData, setMenuData] = useState({
-    name: '',
-    price: '',
-    description: '',
-    category: '',
-    ingredients: '',
-    isAvailable: true
+    name: "",
+    price: "",
+    description: "",
+    category: "",
+    ingredients: "",
+    isAvailable: true,
   });
 
   const router = useRouter();
@@ -74,26 +74,26 @@ export default function RestaurantDashboard() {
     try {
       // สร้าง FormData เพื่อส่งข้อมูลรวมถึงรูปภาพ
       const formData = new FormData();
-      formData.append('name', menuData.name);
-      formData.append('description', menuData.description);
-      formData.append('price', menuData.price);
-      formData.append('category', menuData.category);
-      formData.append('ingredients', menuData.ingredients || '');
-      formData.append('isAvailable', menuData.isAvailable.toString());
+      formData.append("name", menuData.name);
+      formData.append("description", menuData.description);
+      formData.append("price", menuData.price);
+      formData.append("category", menuData.category);
+      formData.append("ingredients", menuData.ingredients || "");
+      formData.append("isAvailable", menuData.isAvailable.toString());
 
       // เพิ่มรูปภาพ (ถ้ามี)
       const imageInput = document.querySelector('input[type="file"]');
       if (imageInput?.files?.[0]) {
-        formData.append('image', imageInput.files[0]);
+        formData.append("image", imageInput.files[0]);
       }
 
       const response = await axios.post(`${api}/admin/upload-menu`, formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
+          "Content-Type": "multipart/form-data",
         },
       });
 
-      console.log('Response:', response.data);
+      console.log("Response:", response.data);
       if (response.status == 200) {
         Swal.fire({
           icon: "success",
@@ -105,8 +105,11 @@ export default function RestaurantDashboard() {
       }
       resetMenuForm();
     } catch (error) {
-      console.error('Error uploading menu:', error);
-      const errorMessage = error?.response?.data?.message || error?.message || 'เกิดข้อผิดพลาดในการเพิ่มเมนู';
+      console.error("Error uploading menu:", error);
+      const errorMessage =
+        error?.response?.data?.message ||
+        error?.message ||
+        "เกิดข้อผิดพลาดในการเพิ่มเมนู";
       Swal.fire({
         icon: "error",
         title: "เกิดข้อผิดพลาด",
@@ -123,12 +126,12 @@ export default function RestaurantDashboard() {
   const resetMenuForm = () => {
     setmenushow(false);
     setMenuData({
-      name: '',
-      description: '',
-      price: '',
-      category: '',
-      ingredients: '',
-      isAvailable: true
+      name: "",
+      description: "",
+      price: "",
+      category: "",
+      ingredients: "",
+      isAvailable: true,
     });
     setImagePreview(null);
   };
@@ -443,12 +446,13 @@ export default function RestaurantDashboard() {
                     </div>
                     <span
                       className={`text-xs font-semibold px-3 py-1 rounded-full
-                      ${order.status === "พร้อมเสิร์ฟ"
+                      ${
+                        order.status === "พร้อมเสิร์ฟ"
                           ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
                           : order.status === "กำลังทำ"
-                            ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"
-                            : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
-                        }`}
+                          ? "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"
+                          : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
+                      }`}
                     >
                       {order.status}
                     </span>
