@@ -487,6 +487,7 @@ export default function OrderPage() {
           price: c.item.price,
         })),
       },
+      session: sessionHash,
       table_number: tableNumber, // ส่งเป็น string
     };
 
