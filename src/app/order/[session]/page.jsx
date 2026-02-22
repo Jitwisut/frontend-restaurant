@@ -737,8 +737,8 @@ export default function OrderPage() {
                         fill
                         className="object-cover group-hover:scale-105 transition-transform duration-700"
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                        priority={false}
-                        loading="lazy"
+                        priority={index < 5}
+                        //loading="lazy"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
                       <div className="absolute top-2 left-2 lg:top-3 lg:left-3 flex flex-col space-y-1 lg:space-y-2">
