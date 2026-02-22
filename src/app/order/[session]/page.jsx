@@ -721,7 +721,7 @@ export default function OrderPage() {
           )}
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 lg:gap-6">
-            {filteredMenu.map((item) => {
+            {filteredMenu.map((item, index) => {
               const cartItem = cart.find((c) => c.item.id === item.id);
               const isFavorite = favorites.has(item.id);
               return (
