@@ -1,64 +1,80 @@
-// app/orders/page.jsx
+"use client";
+
+import { useState, useEffect, useCallback } from "react";
+import axios from "axios";
 import OrdersView from "./OrdersView";
 
-const ordersData = {
-  order: [
-    {
-      table_number: 6,
-      id: "ORD-20251211-001",
-      status: "completed",
-      created_at: "2025-12-10T12:37:47.604Z",
-      session_id: "e028c916-51de-4354-b604-ecc5d2d2c0af",
-      opened_at: "2025-12-10T12:37:36.049Z",
-      closed_at: "2025-12-10T12:38:15.279Z",
-      items: [
-        { menu_item_name: "ปลากระพง", quantity: 1, price: 399 },
-        { menu_item_name: "ข้าวเหนียวมะม่วง", quantity: 1, price: 99 },
-      ],
-      total: "498.00",
-    },
-    {
-      table_number: 2,
-      id: "ORD-20251206-003",
-      status: "completed",
-      created_at: "2025-12-06T02:00:02.787Z",
-      session_id: "c62bc34e-db39-4a1f-a355-4664bdfdcb44",
-      opened_at: "2025-12-06T01:59:49.162Z",
-      closed_at: "2025-12-06T02:00:29.524Z",
-      items: [
-        { menu_item_name: "ส้มตำ", quantity: 1, price: 190 },
-        { menu_item_name: "เบียร์สิงห์", quantity: 1, price: 80 },
-      ],
-      total: "270.00",
-    },
-    {
-      table_number: 2,
-      id: "ORD-20251206-002",
-      status: "completed",
-      created_at: "2025-12-06T01:59:58.748Z",
-      session_id: "c62bc34e-db39-4a1f-a355-4664bdfdcb44",
-      opened_at: "2025-12-06T01:59:49.162Z",
-      closed_at: "2025-12-06T02:00:29.524Z",
-      items: [
-        { menu_item_name: "ต้มยำกุ้ง", quantity: 1, price: 190 },
-        { menu_item_name: "สตอเบอรี่ช็อตเค้ก", quantity: 1, price: 69 },
-      ],
-      total: "259.00",
-    },
-    {
-      table_number: 6,
-      id: "ORD-20251206-001",
-      status: "completed",
-      created_at: "2025-12-06T01:48:29.712Z",
-      session_id: null,
-      opened_at: null,
-      closed_at: null,
-      items: [{ menu_item_name: "ต้มยำกุ้ง", quantity: 1, price: 190 }],
-      total: "190.00",
-    },
-  ],
-};
+const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 export default function OrdersPage() {
-  return <OrdersView orders={ordersData.order} />;
+  const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchOrders = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await axios.post(
+        `${API_BASE}/order/orderhistory`,
+        {},
+        { withCredentials: true }
+      );
+      setOrders(res.data.order ?? []);
+    } catch (err) {
+      console.error("Failed to fetch orders:", err);
+      setError(
+        err.response?.data?.message ??
+          "ไม่สามารถดึงข้อมูลออเดอร์ได้ กรุณาลองใหม่อีกครั้ง"
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
+
+  /* ---------- Loading ---------- */
+  if (loading) {
+    return (
+      <main className="min-h-dvh bg-gradient-to-b from-orange-50 via-amber-50 to-white flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <div className="relative w-16 h-16 mx-auto">
+            <div className="absolute inset-0 border-4 border-orange-200 rounded-full" />
+            <div className="absolute inset-0 border-4 border-t-orange-500 rounded-full animate-spin" />
+          </div>
+          <p className="text-sm text-slate-600 font-medium">
+            กำลังโหลดข้อมูลออเดอร์...
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  /* ---------- Error ---------- */
+  if (error) {
+    return (
+      <main className="min-h-dvh bg-gradient-to-b from-orange-50 via-amber-50 to-white flex items-center justify-center">
+        <div className="text-center space-y-4 max-w-md px-4">
+          <div className="text-5xl">⚠️</div>
+          <h2 className="text-xl font-semibold text-slate-900">
+            เกิดข้อผิดพลาด
+          </h2>
+          <p className="text-sm text-slate-600">{error}</p>
+          <button
+            type="button"
+            onClick={fetchOrders}
+            className="inline-flex items-center gap-2 rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-orange-700 transition"
+          >
+            ลองใหม่อีกครั้ง
+          </button>
+        </div>
+      </main>
+    );
+  }
+
+  /* ---------- Data ---------- */
+  return <OrdersView orders={orders} />;
 }
