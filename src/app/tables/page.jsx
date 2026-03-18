@@ -1,669 +1,808 @@
 "use client";
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef, useCallback } from "react";
 import axios from "axios";
 
-/*— ตั้งฐาน URL ของ API —*/
-const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL;
+const API = process.env.NEXT_PUBLIC_BACKEND_URL;
 
-/*— การ์ดสรุปจำนวนโต๊ะ —*/
-function SummaryCard({ icon, title, value, variant = "blue", subtitle }) {
-  const bgMap = {
-    blue: "from-blue-500 to-blue-600",
-    green: "from-green-500 to-green-600",
-    red: "from-red-500 to-red-600",
-    amber: "from-amber-500 to-amber-600",
-    purple: "from-purple-500 to-purple-600",
-  };
+/* ─── Layout constants ─── */
+const GRID = 20;
+const TW = 120;
+const TH = 120;
+const CW = 1800;
+const CH = 1200;
+const MIN_Z = 0.3;
+const MAX_Z = 2.0;
+const Z_STEP = 0.1;
+const LS_KEY = "table_layout_v2";
 
-  const cardBgMap = {
-    blue: "from-blue-50 to-blue-100",
-    green: "from-green-50 to-green-100",
-    red: "from-red-50 to-red-100",
-    amber: "from-amber-50 to-amber-100",
-    purple: "from-purple-50 to-purple-100",
-  };
+const snap = (v) => Math.round(v / GRID) * GRID;
 
-  return (
-    <div
-      className={`bg-gradient-to-br ${cardBgMap[variant]} backdrop-blur-sm rounded-2xl shadow-lg p-6 border border-white/40 hover:shadow-xl transition-all duration-300 transform hover:scale-105`}
-    >
-      <div className="flex items-center">
-        <div
-          className={`w-14 h-14 bg-gradient-to-r ${bgMap[variant]} rounded-xl flex items-center justify-center text-white text-2xl mr-4 shadow-lg`}
-        >
-          {icon}
-        </div>
-        <div className="flex-1">
-          <p className="text-sm text-gray-600 font-semibold mb-1">{title}</p>
-          <p className="text-3xl font-bold text-gray-800">{value}</p>
-          {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
-        </div>
-      </div>
-    </div>
-  );
-}
+/* ─── Status themes ─── */
+const STATUS = {
+  available: {
+    bg: "#10b981",
+    ring: "#34d399",
+    label: "ว่าง",
+    labelEn: "Available",
+    iconBg: "rgba(16,185,129,0.15)",
+  },
+  open: {
+    bg: "#ef4444",
+    ring: "#f87171",
+    label: "กำลังใช้งาน",
+    labelEn: "Occupied",
+    iconBg: "rgba(239,68,68,0.15)",
+  },
+  reserved: {
+    bg: "#f59e0b",
+    ring: "#fbbf24",
+    label: "จองแล้ว",
+    labelEn: "Reserved",
+    iconBg: "rgba(245,158,11,0.15)",
+  },
+  maintenance: {
+    bg: "#6b7280",
+    ring: "#9ca3af",
+    label: "ปิดปรับปรุง",
+    labelEn: "Maintenance",
+    iconBg: "rgba(107,114,128,0.15)",
+  },
+};
+const FB = STATUS.maintenance;
+const getS = (s) => STATUS[s] || FB;
 
-/*— ปุ่มกดใน modal —*/
-function ActionButton({
-  color,
-  icon,
-  children,
-  onClick,
-  disabled = false,
-  loading = false,
-}) {
-  const gradientMap = {
-    green:
-      "from-green-500 to-green-600 hover:from-green-600 hover:to-green-700",
-    red: "from-red-500 to-red-600 hover:from-red-600 hover:to-red-700",
-    blue: "from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700",
-    amber:
-      "from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700",
-  };
+/* ══════════════════════════════════════════════════════════════════════════
+   SVG Icons — cleaner than emoji for production
+   ══════════════════════════════════════════════════════════════════════════ */
+const Icons = {
+  table: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+      <rect x="3" y="4" width="18" height="12" rx="2" />
+      <line x1="7" y1="20" x2="7" y2="16" />
+      <line x1="17" y1="20" x2="17" y2="16" />
+    </svg>
+  ),
+  edit: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+    </svg>
+  ),
+  lock: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+    </svg>
+  ),
+  plus: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="w-4 h-4">
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  ),
+  refresh: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+      <polyline points="23 4 23 10 17 10" />
+      <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+    </svg>
+  ),
+  reset: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+      <polyline points="1 4 1 10 7 10" />
+      <polyline points="23 20 23 14 17 14" />
+      <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
+    </svg>
+  ),
+  zoomIn: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="w-4 h-4">
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      <line x1="11" y1="8" x2="11" y2="14" />
+      <line x1="8" y1="11" x2="14" y2="11" />
+    </svg>
+  ),
+  zoomOut: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="w-4 h-4">
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+      <line x1="8" y1="11" x2="14" y2="11" />
+    </svg>
+  ),
+  x: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="w-5 h-5">
+      <line x1="18" y1="6" x2="6" y2="18" />
+      <line x1="6" y1="6" x2="18" y2="18" />
+    </svg>
+  ),
+  qr: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="w-5 h-5">
+      <rect x="3" y="3" width="7" height="7" rx="1" />
+      <rect x="14" y="3" width="7" height="7" rx="1" />
+      <rect x="3" y="14" width="7" height="7" rx="1" />
+      <rect x="14" y="14" width="3" height="3" />
+      <rect x="18" y="18" width="3" height="3" />
+      <rect x="18" y="14" width="3" height="1" />
+      <rect x="14" y="18" width="1" height="3" />
+    </svg>
+  ),
+  print: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+      <polyline points="6 9 6 2 18 2 18 9" />
+      <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
+      <rect x="6" y="14" width="12" height="8" />
+    </svg>
+  ),
+  check: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  ),
+  utensils: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+      <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
+      <path d="M7 2v20" />
+      <path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" />
+    </svg>
+  ),
+  move: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+      <polyline points="5 9 2 12 5 15" />
+      <polyline points="9 5 12 2 15 5" />
+      <polyline points="15 19 12 22 9 19" />
+      <polyline points="19 9 22 12 19 15" />
+      <line x1="2" y1="12" x2="22" y2="12" />
+      <line x1="12" y1="2" x2="12" y2="22" />
+    </svg>
+  ),
+};
 
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled || loading}
-      className={`w-full bg-gradient-to-r ${gradientMap[color]} text-white py-3 px-4 rounded-xl font-semibold transition-all duration-200 transform hover:scale-105 shadow-lg flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none`}
-    >
-      {loading ? (
-        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-      ) : (
-        <span className="mr-2">{icon}</span>
-      )}
-      {loading ? "กำลังดำเนินการ..." : children}
-    </button>
-  );
-}
-
-/*— Toast Notification —*/
+/* ══════════════════════════════════════════════════════════════════════════
+   TOAST
+   ══════════════════════════════════════════════════════════════════════════ */
 function Toast({ message, type, onClose }) {
-  const bgMap = {
-    success: "from-green-500 to-green-600",
-    error: "from-red-500 to-red-600",
-    info: "from-blue-500 to-blue-600",
+  const colors = {
+    success: { bg: "#059669", border: "#10b981" },
+    error: { bg: "#dc2626", border: "#ef4444" },
+    info: { bg: "#2563eb", border: "#3b82f6" },
   };
-
-  const iconMap = {
-    success: "✅",
-    error: "❌",
-    info: "ℹ️",
-  };
-
+  const c = colors[type] || colors.info;
   useEffect(() => {
-    const timer = setTimeout(onClose, 3000);
-    return () => clearTimeout(timer);
+    const t = setTimeout(onClose, 3500);
+    return () => clearTimeout(t);
   }, [onClose]);
 
   return (
-    <div className="fixed top-4 right-4 z-50 animate-slide-in-right">
+    <div className="fixed top-5 right-5 z-[200] animate-toast-in">
       <div
-        className={`bg-gradient-to-r ${bgMap[type]} text-white px-6 py-4 rounded-xl shadow-2xl flex items-center max-w-sm`}
+        className="flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-2xl text-white text-sm font-medium backdrop-blur-sm"
+        style={{ backgroundColor: c.bg, borderLeft: `4px solid ${c.border}` }}
       >
-        <span className="text-xl mr-3">{iconMap[type]}</span>
-        <p className="font-medium">{message}</p>
-        <button
-          onClick={onClose}
-          className="ml-4 text-white/80 hover:text-white text-xl font-bold"
-        >
-          ×
+        <span>{message}</span>
+        <button onClick={onClose} className="ml-2 opacity-60 hover:opacity-100 transition">
+          {Icons.x}
         </button>
       </div>
     </div>
   );
 }
 
-/*— Filter Buttons —*/
-function FilterButton({ active, onClick, children, count }) {
+/* ══════════════════════════════════════════════════════════════════════════
+   TABLE NODE — round restaurant table
+   ══════════════════════════════════════════════════════════════════════════ */
+function TableNode({ table, pos, zoom, editMode, onDragEnd, onClick }) {
+  const s = getS(table.status);
+  const el = useRef(null);
+  const drag = useRef(false);
+  const off = useRef({ x: 0, y: 0 });
+
+  const onDown = useCallback(
+    (e) => {
+      if (!editMode) return;
+      e.stopPropagation();
+      drag.current = true;
+      off.current = { x: e.clientX / zoom - pos.x, y: e.clientY / zoom - pos.y };
+
+      const onMove = (ev) => {
+        if (!drag.current) return;
+        const nx = Math.max(0, Math.min(snap(ev.clientX / zoom - off.current.x), CW - TW));
+        const ny = Math.max(0, Math.min(snap(ev.clientY / zoom - off.current.y), CH - TH));
+        el.current.style.left = nx + "px";
+        el.current.style.top = ny + "px";
+        el.current.dataset.x = nx;
+        el.current.dataset.y = ny;
+      };
+
+      const onUp = () => {
+        drag.current = false;
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+        const fx = parseFloat(el.current.dataset.x ?? pos.x);
+        const fy = parseFloat(el.current.dataset.y ?? pos.y);
+        onDragEnd(table.table_number, fx, fy);
+      };
+
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+    },
+    [editMode, zoom, pos, onDragEnd, table.table_number]
+  );
+
   return (
-    <button
-      onClick={onClick}
-      className={`px-4 py-2 rounded-xl font-medium transition-all duration-200 flex items-center space-x-2 ${
-        active
-          ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg"
-          : "bg-white/70 text-gray-700 hover:bg-white/90 hover:shadow-md"
-      }`}
+    <div
+      ref={el}
+      onMouseDown={onDown}
+      onClick={(e) => {
+        if (!editMode) { e.stopPropagation(); onClick(table); }
+      }}
+      className="absolute select-none group"
+      style={{
+        left: pos.x,
+        top: pos.y,
+        width: TW,
+        height: TH,
+        cursor: editMode ? "grab" : "pointer",
+      }}
     >
-      <span>{children}</span>
-      {count !== undefined && (
-        <span
-          className={`px-2 py-1 text-xs rounded-full ${
-            active ? "bg-white/20" : "bg-gray-200"
-          }`}
-        >
-          {count}
+      {/* Outer glow ring on hover */}
+      <div
+        className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        style={{
+          boxShadow: `0 0 0 3px ${s.ring}40, 0 0 20px ${s.bg}30`,
+        }}
+      />
+
+      {/* Main circle */}
+      <div
+        className="relative w-full h-full rounded-full flex flex-col items-center justify-center transition-all duration-200"
+        style={{
+          background: `radial-gradient(circle at 35% 35%, ${s.ring}, ${s.bg})`,
+          boxShadow: `0 4px 16px ${s.bg}40, inset 0 1px 0 rgba(255,255,255,0.2)`,
+        }}
+      >
+        {/* Table number — large and prominent */}
+        <span className="text-white font-black text-2xl leading-none drop-shadow-sm">
+          {table.table_number}
         </span>
+
+        {/* Status label */}
+        <span
+          className="mt-1 text-[10px] font-bold tracking-wide uppercase px-2 py-0.5 rounded-full"
+          style={{ background: "rgba(0,0,0,0.25)", color: "rgba(255,255,255,0.9)" }}
+        >
+          {s.label}
+        </span>
+
+        {/* Active pulse for occupied tables */}
+        {table.status === "open" && (
+          <div
+            className="absolute inset-0 rounded-full animate-ping-slow"
+            style={{ border: `2px solid ${s.ring}`, opacity: 0.3 }}
+          />
+        )}
+      </div>
+
+      {/* Edit mode drag indicator */}
+      {editMode && (
+        <div className="absolute -top-1 -right-1 w-6 h-6 bg-white rounded-full shadow-lg flex items-center justify-center text-slate-600 opacity-80 group-hover:opacity-100 transition">
+          {Icons.move}
+        </div>
       )}
+    </div>
+  );
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   TOOLBAR BUTTON
+   ══════════════════════════════════════════════════════════════════════════ */
+function ToolBtn({ icon, label, onClick, active, variant = "default", className = "" }) {
+  const base = "inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 whitespace-nowrap";
+  const styles = {
+    default: active
+      ? "bg-white/15 text-white ring-1 ring-white/20"
+      : "text-slate-300 hover:bg-white/10 hover:text-white",
+    primary: "bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/25",
+    warning: active
+      ? "bg-amber-500 text-white shadow-md shadow-amber-500/30 ring-1 ring-amber-400"
+      : "text-slate-300 hover:bg-white/10 hover:text-white",
+    ghost: "text-slate-400 hover:text-white hover:bg-white/10",
+  };
+
+  return (
+    <button onClick={onClick} className={`${base} ${styles[variant]} ${className}`}>
+      {icon}
+      {label && <span>{label}</span>}
     </button>
   );
 }
 
-/*--------------------------------------------------------------------*/
-
-export default function TableManagement() {
-  const router = useRouter();
-
-  /* ---------- state ---------- */
+/* ══════════════════════════════════════════════════════════════════════════
+   MAIN PAGE
+   ══════════════════════════════════════════════════════════════════════════ */
+export default function TableLayoutPage() {
   const [tables, setTables] = useState([]);
-  const [filteredTables, setFilteredTables] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [selectedTable, setSelectedTable] = useState(null);
+  const [positions, setPositions] = useState({});
+  const [loading, setLoading] = useState(true);
+  const [editMode, setEditMode] = useState(false);
+  const [zoom, setZoom] = useState(0.75);
+  const [selected, setSelected] = useState(null);
   const [showQR, setShowQR] = useState(false);
   const [qr64, setQr64] = useState("");
   const [fullurl, setFullurl] = useState("");
-  const [actionLoading, setActionLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState(null);
-  const [filter, setFilter] = useState("all");
-  const [searchTerm, setSearchTerm] = useState("");
+  const [confirmReset, setConfirmReset] = useState(false);
 
-  /* ---------- fetch tables ---------- */
-  const fetchTables = async () => {
-    try {
-      setIsLoading(true);
-      const { data } = await axios.get(`${API_BASE}/tables/gettable`, {
-        withCredentials: true,
-      });
-      console.log(data);
-      //จัดเรียงข้อมูลก่อนบันทึกลงตาราง
-      setTables(data.tables.sort((a,b)=>a.table_number-b.table_number));
-      setFilteredTables(data.tables);
-    } catch (err) {
-      console.error("Error fetching tables:", err);
-      showToast("เกิดข้อผิดพลาดในการโหลดข้อมูล", "error");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const notify = useCallback((msg, type) => setToast({ message: msg, type }), []);
 
+  /* — positions persistence — */
   useEffect(() => {
-    fetchTables();
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (raw) setPositions(JSON.parse(raw));
+    } catch { /* noop */ }
   }, []);
 
-  /* ---------- filter and search ---------- */
-  useEffect(() => {
-    let filtered = tables;
+  const savePos = useCallback((next) => {
+    setPositions(next);
+    localStorage.setItem(LS_KEY, JSON.stringify(next));
+  }, []);
 
-    // Filter by status
-    if (filter !== "all") {
-      filtered = filtered.filter((table) => table.status === filter);
-    }
-
-    // Search by table number
-    if (searchTerm) {
-      filtered = filtered.filter((table) =>
-        table.table_number.toString().includes(searchTerm)
-      );
-    }
-
-    setFilteredTables(filtered);
-  }, [tables, filter, searchTerm]);
-
-  /* ---------- helpers ---------- */
-  const colorBox = (s) =>
-    ({
-      available: "from-green-50 to-green-100 border-green-200 shadow-green-100",
-      open: "from-red-50 to-red-100 border-red-200 shadow-red-100",
-      reserved: "from-amber-50 to-amber-100 border-amber-200 shadow-amber-100",
-      maintenance: "from-gray-50 to-gray-100 border-gray-200 shadow-gray-100",
-    }[s] || "from-gray-50 to-gray-100 border-gray-200 shadow-gray-100");
-
-  const iconOf = (s) =>
-    ({
-      available: "✨",
-      open: "🍽️",
-      reserved: "📋",
-      maintenance: "🔧",
-    }[s] || "❓");
-
-  const thaiStatus = (s) =>
-    ({
-      available: "ว่าง",
-      open: "มีลูกค้า",
-      reserved: "จอง",
-      maintenance: "ปรับปรุง",
-    }[s] || "ไม่ทราบ");
-
-  const countBy = (s) => tables.filter((t) => t.status === s).length;
-
-  const showToast = (message, type) => {
-    setToast({ message, type });
-  };
-
-  /* ---------- actions ---------- */
-  const openTable = async (number) => {
+  /* — fetch tables — */
+  const fetchTables = useCallback(async () => {
     try {
-      setActionLoading(true);
-      const { data } = await axios.post(
-        `${API_BASE}/tables/opentable`,
-        { number },
-        { withCredentials: true }
-      );
+      setLoading(true);
+      const { data } = await axios.get(`${API}/tables/gettable`, { withCredentials: true });
+      const sorted = data.tables.sort((a, b) => a.table_number - b.table_number);
+      setTables(sorted);
 
-      setTables((prev) =>
-        prev.map((t) =>
-          t.table_number === number
-            ? {
-                ...t,
-                status: "open",
-                fullurl: data.fullurl,
-                qr_code_url: data.qr_code_url,
-              }
-            : t
-        )
-      );
+      setPositions((prev) => {
+        const next = { ...prev };
+        let changed = false;
+        const cols = Math.floor(CW / (TW + 40));
+        sorted.forEach((t, i) => {
+          if (next[t.table_number] === undefined) {
+            next[t.table_number] = {
+              x: snap(60 + (i % cols) * (TW + 40)),
+              y: snap(60 + Math.floor(i / cols) * (TH + 40)),
+            };
+            changed = true;
+          }
+        });
+        if (changed) localStorage.setItem(LS_KEY, JSON.stringify(next));
+        return next;
+      });
+    } catch {
+      notify("ไม่สามารถโหลดข้อมูลโต๊ะได้", "error");
+    } finally {
+      setLoading(false);
+    }
+  }, [notify]);
 
+  useEffect(() => { fetchTables(); }, [fetchTables]);
+
+  /* — drag end — */
+  const handleDragEnd = useCallback(
+    (num, x, y) => savePos({ ...positions, [num]: { x, y } }),
+    [positions, savePos]
+  );
+
+  /* — zoom — */
+  const zIn = () => setZoom((z) => Math.min(z + Z_STEP, MAX_Z));
+  const zOut = () => setZoom((z) => Math.max(z - Z_STEP, MIN_Z));
+  const zReset = () => setZoom(0.75);
+
+  const onWheel = useCallback((e) => {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      setZoom((z) => Math.max(MIN_Z, Math.min(MAX_Z, z + (e.deltaY < 0 ? Z_STEP : -Z_STEP))));
+    }
+  }, []);
+
+  /* — table actions — */
+  const openTable = async (num) => {
+    try {
+      setBusy(true);
+      const { data } = await axios.post(`${API}/tables/opentable`, { number: num }, { withCredentials: true });
+      setTables((p) => p.map((t) => t.table_number === num ? { ...t, status: "open", fullurl: data.fullurl, qr_code_url: data.qr_code_url } : t));
       setFullurl(data.fullurl);
       setQr64(data.qr_code_url);
       setShowQR(true);
-      setSelectedTable(null);
-      showToast(`เปิดโต๊ะ ${number} เรียบร้อยแล้ว`, "success");
+      setSelected(null);
+      notify(`เปิดโต๊ะ ${num} สำเร็จ`, "success");
     } catch (err) {
-      console.error(err);
-      showToast(
-        err.response?.data?.message || "เกิดข้อผิดพลาดในการเปิดโต๊ะ",
-        "error"
-      );
-    } finally {
-      setActionLoading(false);
-    }
+      notify(err.response?.data?.message || "ไม่สามารถเปิดโต๊ะได้", "error");
+    } finally { setBusy(false); }
   };
 
-  const closeTable = async (number) => {
+  const closeTable = async (num) => {
     try {
-      setActionLoading(true);
-      const { data } = await axios.post(
-        `${API_BASE}/tables/closetable`,
-        { number },
-        { withCredentials: true }
-      );
-
-      setTables((prev) =>
-        prev.map((t) =>
-          t.table_number === number
-            ? { ...t, status: "available", fullurl: null, qr_code_url: null }
-            : t
-        )
-      );
-
-      setSelectedTable(null);
-      showToast(data.message || `ปิดโต๊ะ ${number} เรียบร้อยแล้ว`, "success");
-    } catch (err) {
-      console.error(err);
-      showToast("เกิดข้อผิดพลาดในการปิดโต๊ะ", "error");
-    } finally {
-      setActionLoading(false);
-    }
+      setBusy(true);
+      const { data } = await axios.post(`${API}/tables/closetable`, { number: num }, { withCredentials: true });
+      setTables((p) => p.map((t) => t.table_number === num ? { ...t, status: "available", fullurl: null, qr_code_url: null } : t));
+      setSelected(null);
+      notify(data.message || `ปิดโต๊ะ ${num} สำเร็จ`, "success");
+    } catch { notify("ไม่สามารถปิดโต๊ะได้", "error"); }
+    finally { setBusy(false); }
   };
 
-  const refreshData = async () => {
-    await fetchTables();
-    showToast("รีเฟรชข้อมูลเรียบร้อย", "info");
+  const addTable = async () => {
+    try {
+      const { data } = await axios.post(`${API}/tables/addtable`, {}, { withCredentials: true });
+      notify(data.message || "เพิ่มโต๊ะสำเร็จ", "success");
+      await fetchTables();
+    } catch { notify("ไม่สามารถเพิ่มโต๊ะได้", "error"); }
   };
 
-  /* ---------- loading ---------- */
-  if (isLoading) {
+  const resetLayout = () => {
+    const next = {};
+    const cols = Math.floor(CW / (TW + 40));
+    tables.forEach((t, i) => {
+      next[t.table_number] = {
+        x: snap(60 + (i % cols) * (TW + 40)),
+        y: snap(60 + Math.floor(i / cols) * (TH + 40)),
+      };
+    });
+    savePos(next);
+    setConfirmReset(false);
+    notify("รีเซ็ตผังโต๊ะเรียบร้อย", "info");
+  };
+
+  /* — counts — */
+  const cnt = (s) => tables.filter((t) => t.status === s).length;
+
+  /* ────── LOADING ────── */
+  if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "#0f172a" }}>
         <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 text-lg font-medium">
-            กำลังโหลดข้อมูล...
-          </p>
+          <div className="relative w-16 h-16 mx-auto mb-5">
+            <div className="absolute inset-0 rounded-full border-[3px] border-slate-700" />
+            <div className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-indigo-400 animate-spin" />
+          </div>
+          <p className="text-slate-400 text-sm font-medium">กำลังโหลดข้อมูลโต๊ะ...</p>
         </div>
       </div>
     );
   }
 
-  /* ---------- UI ---------- */
+  /* ────── RENDER ────── */
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50">
-      {/* Toast Notification */}
-      {toast && (
-        <Toast
-          message={toast.message}
-          type={toast.type}
-          onClose={() => setToast(null)}
-        />
-      )}
+    <div className="h-screen flex flex-col overflow-hidden" style={{ background: "#0f172a", color: "#f1f5f9" }}>
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
 
-      {/* === QR Modal === */}
+      {/* ═══ HEADER ═══ */}
+      <header className="flex-none z-20" style={{ background: "rgba(15,23,42,0.95)", borderBottom: "1px solid rgba(255,255,255,0.06)", backdropFilter: "blur(16px)" }}>
+        <div className="px-5 py-3 flex items-center gap-5">
+          {/* Title section */}
+          <div className="flex items-center gap-3 mr-auto">
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "rgba(99,102,241,0.15)" }}>
+              <span className="text-indigo-400">{Icons.table}</span>
+            </div>
+            <div>
+              <h1 className="text-base font-bold text-white leading-tight">ผังโต๊ะร้าน</h1>
+              <p className="text-[11px] text-slate-500 font-medium">Table Floor Plan</p>
+            </div>
+          </div>
+
+          {/* Quick stats */}
+          <div className="hidden md:flex items-center gap-1.5">
+            {[
+              { label: "ทั้งหมด", val: tables.length, color: "#64748b" },
+              { label: "ว่าง", val: cnt("available"), color: "#10b981" },
+              { label: "ใช้งาน", val: cnt("open"), color: "#ef4444" },
+              { label: "จอง", val: cnt("reserved"), color: "#f59e0b" },
+            ].map((s) => (
+              <div
+                key={s.label}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold"
+                style={{ background: `${s.color}15`, color: s.color }}
+              >
+                <div className="w-1.5 h-1.5 rounded-full" style={{ background: s.color }} />
+                {s.val}
+                <span className="text-[10px] opacity-70">{s.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* Divider */}
+          <div className="w-px h-7 bg-white/10 hidden lg:block" />
+
+          {/* Zoom controls */}
+          <div className="hidden sm:flex items-center rounded-lg overflow-hidden" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <button onClick={zOut} className="px-2.5 py-1.5 hover:bg-white/10 transition text-slate-400 hover:text-white">{Icons.zoomOut}</button>
+            <button onClick={zReset} className="px-3 py-1.5 border-x border-white/8 hover:bg-white/10 transition text-xs font-mono text-slate-300 min-w-[50px] text-center">
+              {Math.round(zoom * 100)}%
+            </button>
+            <button onClick={zIn} className="px-2.5 py-1.5 hover:bg-white/10 transition text-slate-400 hover:text-white">{Icons.zoomIn}</button>
+          </div>
+
+          {/* Action buttons */}
+          <ToolBtn
+            icon={editMode ? Icons.lock : Icons.edit}
+            label={editMode ? "บันทึกผัง" : "จัดผังโต๊ะ"}
+            onClick={() => {
+              if (editMode) notify("บันทึกผังโต๊ะเรียบร้อย", "success");
+              setEditMode(!editMode);
+            }}
+            variant="warning"
+            active={editMode}
+          />
+
+          {editMode && (
+            <ToolBtn
+              icon={Icons.reset}
+              label="รีเซ็ต"
+              onClick={() => setConfirmReset(true)}
+              variant="ghost"
+            />
+          )}
+
+          <ToolBtn icon={Icons.plus} label="เพิ่มโต๊ะ" onClick={addTable} variant="primary" />
+
+          <ToolBtn
+            icon={Icons.refresh}
+            onClick={async () => { await fetchTables(); notify("รีเฟรชข้อมูลเรียบร้อย", "info"); }}
+            variant="ghost"
+          />
+        </div>
+
+        {/* Edit mode banner */}
+        {editMode && (
+          <div className="px-5 py-2 flex items-center justify-center gap-2 text-xs font-semibold" style={{ background: "rgba(245,158,11,0.1)", borderTop: "1px solid rgba(245,158,11,0.15)", color: "#fbbf24" }}>
+            <span className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+            โหมดจัดผังโต๊ะ — ลากโต๊ะเพื่อจัดวาง เสร็จแล้วกด &quot;บันทึกผัง&quot;
+          </div>
+        )}
+      </header>
+
+      {/* ═══ CANVAS ═══ */}
+      <main
+        className="flex-1 overflow-auto relative"
+        style={{ cursor: "default" }}
+        onWheel={onWheel}
+      >
+        <div
+          style={{
+            transform: `scale(${zoom})`,
+            transformOrigin: "0 0",
+            width: CW,
+            height: CH,
+            position: "relative",
+            margin: "20px",
+          }}
+        >
+          {/* Grid pattern */}
+          <svg className="absolute inset-0 pointer-events-none" width={CW} height={CH}>
+            <defs>
+              <pattern id="dots" width={GRID} height={GRID} patternUnits="userSpaceOnUse">
+                <circle cx="1" cy="1" r="0.6" fill="rgba(148,163,184,0.08)" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#dots)" />
+          </svg>
+
+          {/* Boundary */}
+          <div className="absolute inset-0 rounded-2xl pointer-events-none" style={{ border: "1px solid rgba(255,255,255,0.04)" }} />
+
+          {/* Tables */}
+          {tables.map((t) => (
+            <TableNode
+              key={t.table_number}
+              table={t}
+              pos={positions[t.table_number] || { x: 60, y: 60 }}
+              zoom={zoom}
+              editMode={editMode}
+              onDragEnd={handleDragEnd}
+              onClick={(tbl) => setSelected(tbl)}
+            />
+          ))}
+        </div>
+      </main>
+
+      {/* ═══ BOTTOM BAR — Legend + Shortcuts ═══ */}
+      <footer className="flex-none z-20 px-5 py-2 flex items-center justify-between" style={{ background: "rgba(15,23,42,0.95)", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        <div className="flex items-center gap-4">
+          {Object.entries(STATUS).map(([, cfg]) => (
+            <div key={cfg.label} className="flex items-center gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full" style={{ background: cfg.bg }} />
+              <span className="text-[11px] text-slate-400 font-medium">{cfg.label}</span>
+            </div>
+          ))}
+        </div>
+        <div className="text-[11px] text-slate-500 hidden sm:flex items-center gap-3">
+          <span><kbd className="px-1.5 py-0.5 rounded bg-slate-700/60 text-slate-400 font-mono text-[10px]">Ctrl</kbd> + Scroll = Zoom</span>
+          <span>Scroll = เลื่อนผัง</span>
+        </div>
+      </footer>
+
+      {/* ═══ QR MODAL ═══ */}
       {showQR && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-2xl p-8 text-center max-w-sm w-full animate-scale-in">
-            <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl text-white">📱</span>
-            </div>
-            <h2 className="text-2xl font-bold text-gray-800 mb-2">
-              สแกน QR เพื่อสั่งอาหาร
-            </h2>
-            <p className="text-gray-600 mb-6">ให้ลูกค้าสแกน QR Code ด้านล่าง</p>
-
-            <div className="bg-gradient-to-r from-blue-50 to-purple-50 p-6 rounded-2xl mb-6">
-              <img
-                src={qr64}
-                alt="QR Code"
-                className="w-48 h-48 mx-auto rounded-xl shadow-lg bg-white p-2"
-              />
-              <p className="mt-4 text-xs font-mono break-all text-gray-600 bg-white/70 p-2 rounded-lg">
-                {fullurl}
-              </p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}>
+          <div className="w-full max-w-sm rounded-2xl p-7 animate-modal-in" style={{ background: "#1e293b", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <div className="text-center mb-6">
+              <div className="w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center text-emerald-400" style={{ background: "rgba(16,185,129,0.15)" }}>
+                {Icons.qr}
+              </div>
+              <h2 className="text-lg font-bold text-white">QR Code สั่งอาหาร</h2>
+              <p className="text-sm text-slate-400 mt-1">ให้ลูกค้าสแกนเพื่อเริ่มสั่งอาหาร</p>
             </div>
 
-            <div className="flex space-x-3">
+            <div className="bg-white rounded-xl p-5 mb-4">
+              <img src={qr64} alt="QR Code" className="w-44 h-44 mx-auto" />
+            </div>
+
+            <div className="mb-5 px-3 py-2 rounded-lg text-xs font-mono text-slate-400 break-all" style={{ background: "rgba(255,255,255,0.04)" }}>
+              {fullurl}
+            </div>
+
+            <div className="flex gap-2">
               <button
                 onClick={() => setShowQR(false)}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-3 rounded-xl font-semibold transition-all duration-200"
+                className="flex-1 py-2.5 rounded-xl font-bold text-sm text-white transition-all hover:opacity-90"
+                style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}
               >
                 เสร็จสิ้น
               </button>
               <button
                 onClick={() => window.print()}
-                className="px-4 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl font-semibold transition-all duration-200"
+                className="px-4 py-2.5 rounded-xl font-bold text-sm text-slate-300 transition hover:bg-white/10"
+                style={{ background: "rgba(255,255,255,0.06)" }}
               >
-                🖨️
+                {Icons.print}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* === Header & Controls === */}
-      <div className="max-w-7xl mx-auto p-6">
-        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between mb-8">
-          <div className="mb-4 lg:mb-0">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-              ระบบจัดการโต๊ะ
-            </h1>
-            <p className="text-gray-600 text-lg">
-              จัดการโต๊ะและการสั่งอาหารอย่างมีประสิทธิภาพ
-            </p>
-          </div>
-
-          <div className="flex space-x-3">
-            <button
-              onClick={refreshData}
-              className="px-4 py-2 bg-white/70 hover:bg-white text-gray-700 rounded-xl font-medium transition-all duration-200 shadow-md hover:shadow-lg"
-            >
-              🔄 รีเฟรช
-            </button>
-          </div>
-        </div>
-
-        {/* === Summary Cards === */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
-          <SummaryCard
-            icon="🏪"
-            title="โต๊ะทั้งหมด"
-            value={tables.length}
-            variant="blue"
-            subtitle="จำนวนโต๊ะทั้งหมด"
-          />
-          <SummaryCard
-            icon="✨"
-            title="โต๊ะว่าง"
-            value={countBy("available")}
-            variant="green"
-            subtitle="พร้อมให้บริการ"
-          />
-          <SummaryCard
-            icon="🍽️"
-            title="มีลูกค้า"
-            value={countBy("open")}
-            variant="red"
-            subtitle="กำลังให้บริการ"
-          />
-          <SummaryCard
-            icon="📋"
-            title="จอง"
-            value={countBy("reserved")}
-            variant="amber"
-            subtitle="มีการจองไว้"
-          />
-          <SummaryCard
-            icon="🔧"
-            title="ปรับปรุง"
-            value={countBy("maintenance")}
-            variant="purple"
-            subtitle="ไม่พร้อมใช้งาน"
-          />
-        </div>
-
-        {/* === Filters & Search === */}
-        <div className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 mb-8 shadow-lg">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-            <div className="flex flex-wrap gap-3">
-              <FilterButton
-                active={filter === "all"}
-                onClick={() => setFilter("all")}
-                count={tables.length}
-              >
-                ทั้งหมด
-              </FilterButton>
-              <FilterButton
-                active={filter === "available"}
-                onClick={() => setFilter("available")}
-                count={countBy("available")}
-              >
-                ✨ ว่าง
-              </FilterButton>
-              <FilterButton
-                active={filter === "open"}
-                onClick={() => setFilter("open")}
-                count={countBy("open")}
-              >
-                🍽️ มีลูกค้า
-              </FilterButton>
-              <FilterButton
-                active={filter === "reserved"}
-                onClick={() => setFilter("reserved")}
-                count={countBy("reserved")}
-              >
-                📋 จอง
-              </FilterButton>
-              <FilterButton
-                active={filter === "maintenance"}
-                onClick={() => setFilter("maintenance")}
-                count={countBy("maintenance")}
-              >
-                🔧 ปรับปรุง
-              </FilterButton>
-            </div>
-
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="ค้นหาโต๊ะ..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors duration-200"
-              />
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <span className="text-gray-400">🔍</span>
+      {/* ═══ TABLE DETAIL MODAL ═══ */}
+      {selected && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}>
+          <div className="w-full max-w-sm rounded-2xl animate-modal-in" style={{ background: "#1e293b", border: "1px solid rgba(255,255,255,0.08)" }}>
+            {/* Header with table visual */}
+            <div className="p-6 pb-4">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-4">
+                  {/* Mini table circle */}
+                  <div
+                    className="w-14 h-14 rounded-full flex items-center justify-center text-white font-black text-xl flex-shrink-0"
+                    style={{
+                      background: `radial-gradient(circle at 35% 35%, ${getS(selected.status).ring}, ${getS(selected.status).bg})`,
+                      boxShadow: `0 4px 12px ${getS(selected.status).bg}50`,
+                    }}
+                  >
+                    {selected.table_number}
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-bold text-white">โต๊ะ {selected.table_number}</h2>
+                    <div className="flex items-center gap-1.5 mt-1">
+                      <div className="w-2 h-2 rounded-full" style={{ background: getS(selected.status).bg }} />
+                      <span className="text-sm font-medium" style={{ color: getS(selected.status).ring }}>
+                        {getS(selected.status).label}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelected(null)}
+                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition"
+                >
+                  {Icons.x}
+                </button>
               </div>
             </div>
-          </div>
-        </div>
 
-        {/* === Grid ของโต๊ะ === */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
-          {filteredTables.map((t) => (
-            <div
-              key={t.table_number}
-              onClick={() => setSelectedTable(t)}
-              className={`bg-gradient-to-br ${colorBox(
-                t.status
-              )} border-2 rounded-2xl p-6 cursor-pointer hover:shadow-2xl transition-all duration-300 transform hover:scale-105`}
-            >
-              <div className="text-center">
-                <div className="text-5xl mb-4">{iconOf(t.status)}</div>
-                <h3 className="text-2xl font-bold mb-3 text-gray-800">
-                  โต๊ะ {t.table_number}
-                </h3>
-                <span className="inline-block px-4 py-2 rounded-full text-sm font-bold text-gray-800 bg-white/80 shadow-sm">
-                  {thaiStatus(t.status)}
-                </span>
-
-                {Boolean(t.guestCount) && (
-                  <p className="mt-3 text-sm text-gray-700 font-semibold bg-white/50 rounded-lg p-2">
-                    👥 {t.guestCount} คน
-                  </p>
+            {/* Info rows */}
+            <div className="px-6 pb-4">
+              <div className="rounded-xl p-3 space-y-2.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}>
+                {Boolean(selected.guestCount) && (
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-slate-400">จำนวนลูกค้า</span>
+                    <span className="text-white font-semibold">{selected.guestCount} คน</span>
+                  </div>
                 )}
-
-                <div className="mt-4 p-3 bg-white/80 rounded-xl border border-white/60 shadow-sm">
-                  <p className="text-xs text-gray-600 font-bold mb-1">
-                    QR Link Status
-                  </p>
-                  <p className="text-xs font-mono break-all text-gray-800">
-                    {t.qr_code_url ? "🟢 มี QR Code" : "🔴 ยังไม่มี QR Code"}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {filteredTables.length === 0 && (
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">🔍</div>
-            <h3 className="text-xl font-bold text-gray-600 mb-2">
-              ไม่พบโต๊ะที่ค้นหา
-            </h3>
-            <p className="text-gray-500">ลองเปลี่ยนตัวกรองหรือคำค้นหา</p>
-          </div>
-        )}
-      </div>
-
-      {/* === Modal รายละเอียดโต๊ะ === */}
-      {selectedTable && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-40 p-4">
-          <div className="bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md animate-scale-in">
-            <div className="flex justify-between items-center mb-6">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800">
-                  โต๊ะ {selectedTable.table_number}
-                </h2>
-                <p className="text-gray-600">จัดการสถานะโต๊ะ</p>
-              </div>
-              <button
-                onClick={() => setSelectedTable(null)}
-                className="w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center text-gray-600 transition-all duration-200"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="mb-6 p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-sm text-gray-600 font-semibold">
-                  สถานะปัจจุบัน:
-                </span>
-                <span className="px-3 py-1 rounded-full text-sm font-bold text-gray-800 bg-white shadow-sm">
-                  {iconOf(selectedTable.status)}{" "}
-                  {thaiStatus(selectedTable.status)}
-                </span>
-              </div>
-
-              {Boolean(selectedTable.guestCount) && (
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm text-gray-600 font-semibold">
-                    จำนวนลูกค้า:
-                  </span>
-                  <span className="text-sm font-bold text-gray-800">
-                    👥 {selectedTable.guestCount} คน
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-400">QR Code</span>
+                  <span className={`font-semibold ${selected.qr_code_url ? "text-emerald-400" : "text-slate-500"}`}>
+                    {selected.qr_code_url ? "พร้อมใช้งาน" : "ยังไม่ได้สร้าง"}
                   </span>
                 </div>
-              )}
-
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600 font-semibold">
-                  QR Code:
-                </span>
-                <span
-                  className={`text-xs font-bold ${
-                    selectedTable.qr_code_url
-                      ? "text-green-600"
-                      : "text-red-600"
-                  }`}
-                >
-                  {selectedTable.qr_code_url ? "🟢 มี" : "🔴 ไม่มี"}
-                </span>
               </div>
             </div>
 
-            <div className="space-y-3">
-              {selectedTable.status !== "available" && (
-                <ActionButton
-                  color="green"
-                  icon="✨"
-                  onClick={() => closeTable(selectedTable.table_number)}
-                  loading={actionLoading}
+            {/* Actions */}
+            <div className="px-6 pb-6 space-y-2.5">
+              {selected.status === "available" && (
+                <button
+                  onClick={() => openTable(selected.table_number)}
+                  disabled={busy}
+                  className="w-full py-3 rounded-xl font-bold text-sm text-white transition-all hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-40"
+                  style={{ background: "linear-gradient(135deg, #ef4444, #dc2626)" }}
                 >
-                  ตั้งเป็นโต๊ะว่าง
-                </ActionButton>
+                  {busy ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : Icons.utensils}
+                  {busy ? "กำลังดำเนินการ..." : "เปิดโต๊ะ — รับลูกค้า"}
+                </button>
               )}
 
-              {selectedTable.status === "available" && (
-                <ActionButton
-                  color="red"
-                  icon="🍽️"
-                  onClick={() => openTable(selectedTable.table_number)}
-                  loading={actionLoading}
+              {selected.status !== "available" && (
+                <button
+                  onClick={() => closeTable(selected.table_number)}
+                  disabled={busy}
+                  className="w-full py-3 rounded-xl font-bold text-sm text-white transition-all hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-40"
+                  style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
                 >
-                  เปิดโต๊ะให้ลูกค้า
-                </ActionButton>
+                  {busy ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : Icons.check}
+                  {busy ? "กำลังดำเนินการ..." : "ปิดโต๊ะ — ว่างพร้อมใช้"}
+                </button>
               )}
 
-              {selectedTable.qr_code_url && (
-                <ActionButton
-                  color="blue"
-                  icon="📱"
+              {selected.qr_code_url && (
+                <button
                   onClick={() => {
-                    setQr64(selectedTable.qr_code_url);
-                    setFullurl(selectedTable.fullurl);
+                    setQr64(selected.qr_code_url);
+                    setFullurl(selected.fullurl);
                     setShowQR(true);
-                    setSelectedTable(null);
+                    setSelected(null);
                   }}
+                  className="w-full py-3 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 transition hover:opacity-90"
+                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
                 >
-                  แสดง QR Code
-                </ActionButton>
+                  {Icons.qr}
+                  <span>แสดง QR Code</span>
+                </button>
               )}
             </div>
           </div>
         </div>
       )}
 
+      {/* ═══ CONFIRM RESET DIALOG ═══ */}
+      {confirmReset && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
+          <div className="w-full max-w-xs rounded-2xl p-6 text-center animate-modal-in" style={{ background: "#1e293b", border: "1px solid rgba(255,255,255,0.08)" }}>
+            <div className="w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center text-amber-400" style={{ background: "rgba(245,158,11,0.15)" }}>
+              {Icons.reset}
+            </div>
+            <h3 className="text-base font-bold text-white mb-1">รีเซ็ตผังโต๊ะ?</h3>
+            <p className="text-sm text-slate-400 mb-5">ตำแหน่งโต๊ะทั้งหมดจะถูกจัดเรียงใหม่</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmReset(false)}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-slate-300 transition hover:bg-white/10"
+                style={{ background: "rgba(255,255,255,0.06)" }}
+              >
+                ยกเลิก
+              </button>
+              <button
+                onClick={resetLayout}
+                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white transition hover:opacity-90"
+                style={{ background: "linear-gradient(135deg, #f59e0b, #d97706)" }}
+              >
+                รีเซ็ต
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ STYLES ═══ */}
       <style jsx>{`
-        @keyframes slide-in-right {
-          from {
-            transform: translateX(100%);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
+        @keyframes toast-in {
+          from { transform: translateX(120%); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
         }
-
-        @keyframes scale-in {
-          from {
-            transform: scale(0.9);
-            opacity: 0;
-          }
-          to {
-            transform: scale(1);
-            opacity: 1;
-          }
+        @keyframes modal-in {
+          from { transform: scale(0.95) translateY(8px); opacity: 0; }
+          to { transform: scale(1) translateY(0); opacity: 1; }
         }
-
-        .animate-slide-in-right {
-          animation: slide-in-right 0.3s ease-out;
+        @keyframes ping-slow {
+          0% { transform: scale(1); opacity: 0.3; }
+          50% { transform: scale(1.15); opacity: 0; }
+          100% { transform: scale(1); opacity: 0; }
         }
-
-        .animate-scale-in {
-          animation: scale-in 0.3s ease-out;
-        }
+        .animate-toast-in { animation: toast-in 0.35s cubic-bezier(0.16,1,0.3,1); }
+        .animate-modal-in { animation: modal-in 0.25s cubic-bezier(0.16,1,0.3,1); }
+        .animate-ping-slow { animation: ping-slow 2.5s ease-in-out infinite; }
       `}</style>
     </div>
   );

@@ -15,9 +15,10 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="th">
+    <html lang="th" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        suppressHydrationWarning
       >
         {/* ⭐️ โค้ดทุกหน้า (รวม OrderPage, Kitchen ฯลฯ) จะถูกห่อด้วย Provider ที่นี่ */}
         {children}
