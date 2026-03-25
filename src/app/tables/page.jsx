@@ -6,95 +6,149 @@ const API = process.env.NEXT_PUBLIC_BACKEND_URL;
 
 /* ─── Layout constants ─── */
 const GRID = 20;
-const TW = 120;
-const TH = 120;
+const TW = 130;
+const TH = 130;
 const CW = 1800;
 const CH = 1200;
 const MIN_Z = 0.3;
 const MAX_Z = 2.0;
 const Z_STEP = 0.1;
-const LS_KEY = "table_layout_v2";
+const LS_KEY = "table_layout_v3";
 
 const snap = (v) => Math.round(v / GRID) * GRID;
 
 /* ─── Status themes ─── */
 const STATUS = {
   available: {
-    bg: "#10b981",
+    bg: "#059669",
+    gradient: "from-[#10b981] to-[#047857]",
     ring: "#34d399",
     label: "ว่าง",
-    labelEn: "Available",
-    iconBg: "rgba(16,185,129,0.15)",
+    shadow: "rgba(16,185,129,0.4)",
   },
   open: {
-    bg: "#ef4444",
-    ring: "#f87171",
-    label: "กำลังใช้งาน",
-    labelEn: "Occupied",
-    iconBg: "rgba(239,68,68,0.15)",
+    bg: "#e11d48",
+    gradient: "from-[#f43f5e] to-[#be123c]",
+    ring: "#fb7185",
+    label: "ใช้งาน",
+    shadow: "rgba(244,63,94,0.4)",
   },
   reserved: {
-    bg: "#f59e0b",
+    bg: "#d97706",
+    gradient: "from-[#f59e0b] to-[#b45309]",
     ring: "#fbbf24",
-    label: "จองแล้ว",
-    labelEn: "Reserved",
-    iconBg: "rgba(245,158,11,0.15)",
+    label: "จอง",
+    shadow: "rgba(245,158,11,0.4)",
   },
   maintenance: {
-    bg: "#6b7280",
+    bg: "#4b5563",
+    gradient: "from-[#6b7280] to-[#374151]",
     ring: "#9ca3af",
-    label: "ปิดปรับปรุง",
-    labelEn: "Maintenance",
-    iconBg: "rgba(107,114,128,0.15)",
+    label: "ปรับปรุง",
+    shadow: "rgba(107,114,128,0.4)",
   },
 };
 const FB = STATUS.maintenance;
 const getS = (s) => STATUS[s] || FB;
 
 /* ══════════════════════════════════════════════════════════════════════════
-   SVG Icons — cleaner than emoji for production
+   SVG Icons
    ══════════════════════════════════════════════════════════════════════════ */
 const Icons = {
   table: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="w-5 h-5"
+    >
       <rect x="3" y="4" width="18" height="12" rx="2" />
       <line x1="7" y1="20" x2="7" y2="16" />
       <line x1="17" y1="20" x2="17" y2="16" />
     </svg>
   ),
   edit: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="w-4 h-4"
+    >
       <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
       <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
     </svg>
   ),
   lock: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="w-4 h-4"
+    >
       <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
       <path d="M7 11V7a5 5 0 0 1 10 0v4" />
     </svg>
   ),
   plus: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="w-4 h-4">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      className="w-4 h-4"
+    >
       <line x1="12" y1="5" x2="12" y2="19" />
       <line x1="5" y1="12" x2="19" y2="12" />
     </svg>
   ),
   refresh: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="w-4 h-4"
+    >
       <polyline points="23 4 23 10 17 10" />
       <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
     </svg>
   ),
   reset: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="w-4 h-4"
+    >
       <polyline points="1 4 1 10 7 10" />
       <polyline points="23 20 23 14 17 14" />
       <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15" />
     </svg>
   ),
   zoomIn: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="w-4 h-4">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      className="w-4 h-4"
+    >
       <circle cx="11" cy="11" r="8" />
       <line x1="21" y1="21" x2="16.65" y2="16.65" />
       <line x1="11" y1="8" x2="11" y2="14" />
@@ -102,20 +156,41 @@ const Icons = {
     </svg>
   ),
   zoomOut: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" className="w-4 h-4">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      className="w-4 h-4"
+    >
       <circle cx="11" cy="11" r="8" />
       <line x1="21" y1="21" x2="16.65" y2="16.65" />
       <line x1="8" y1="11" x2="14" y2="11" />
     </svg>
   ),
   x: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" className="w-5 h-5">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      className="w-5 h-5"
+    >
       <line x1="18" y1="6" x2="6" y2="18" />
       <line x1="6" y1="6" x2="18" y2="18" />
     </svg>
   ),
   qr: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="w-5 h-5">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      className="w-5 h-5"
+    >
       <rect x="3" y="3" width="7" height="7" rx="1" />
       <rect x="14" y="3" width="7" height="7" rx="1" />
       <rect x="3" y="14" width="7" height="7" rx="1" />
@@ -126,26 +201,58 @@ const Icons = {
     </svg>
   ),
   print: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="w-4 h-4"
+    >
       <polyline points="6 9 6 2 18 2 18 9" />
       <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
       <rect x="6" y="14" width="12" height="8" />
     </svg>
   ),
   check: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="w-5 h-5"
+    >
       <polyline points="20 6 9 17 4 12" />
     </svg>
   ),
   utensils: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="w-5 h-5"
+    >
       <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2" />
       <path d="M7 2v20" />
       <path d="M21 15V2v0a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7" />
     </svg>
   ),
   move: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-3.5 h-3.5">
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="w-4 h-4"
+    >
       <polyline points="5 9 2 12 5 15" />
       <polyline points="9 5 12 2 15 5" />
       <polyline points="15 19 12 22 9 19" />
@@ -154,31 +261,47 @@ const Icons = {
       <line x1="12" y1="2" x2="12" y2="22" />
     </svg>
   ),
+  copy: (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className="w-4 h-4"
+    >
+      <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+      <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+    </svg>
+  ),
 };
 
 /* ══════════════════════════════════════════════════════════════════════════
    TOAST
    ══════════════════════════════════════════════════════════════════════════ */
 function Toast({ message, type, onClose }) {
-  const colors = {
-    success: { bg: "#059669", border: "#10b981" },
-    error: { bg: "#dc2626", border: "#ef4444" },
-    info: { bg: "#2563eb", border: "#3b82f6" },
+  const styles = {
+    success: "bg-emerald-500/90 border-emerald-400 shadow-emerald-500/20",
+    error: "bg-rose-500/90 border-rose-400 shadow-rose-500/20",
+    info: "bg-indigo-500/90 border-indigo-400 shadow-indigo-500/20",
   };
-  const c = colors[type] || colors.info;
+
   useEffect(() => {
     const t = setTimeout(onClose, 3500);
     return () => clearTimeout(t);
   }, [onClose]);
 
   return (
-    <div className="fixed top-5 right-5 z-[200] animate-toast-in">
+    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[200] animate-toast-in w-full max-w-sm px-4">
       <div
-        className="flex items-center gap-3 px-5 py-3.5 rounded-xl shadow-2xl text-white text-sm font-medium backdrop-blur-sm"
-        style={{ backgroundColor: c.bg, borderLeft: `4px solid ${c.border}` }}
+        className={`flex items-center gap-3 px-5 py-4 rounded-2xl shadow-2xl text-white text-sm font-semibold backdrop-blur-xl border-t border-l ${styles[type || "info"]}`}
       >
-        <span>{message}</span>
-        <button onClick={onClose} className="ml-2 opacity-60 hover:opacity-100 transition">
+        <span className="flex-1">{message}</span>
+        <button
+          onClick={onClose}
+          className="ml-2 bg-white/10 hover:bg-white/20 rounded-full p-1.5 transition-colors"
+        >
           {Icons.x}
         </button>
       </div>
@@ -187,25 +310,43 @@ function Toast({ message, type, onClose }) {
 }
 
 /* ══════════════════════════════════════════════════════════════════════════
-   TABLE NODE — round restaurant table
+   TABLE NODE
    ══════════════════════════════════════════════════════════════════════════ */
 function TableNode({ table, pos, zoom, editMode, onDragEnd, onClick }) {
   const s = getS(table.status);
   const el = useRef(null);
   const drag = useRef(false);
   const off = useRef({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
 
   const onDown = useCallback(
     (e) => {
       if (!editMode) return;
       e.stopPropagation();
+      const isTouch = e.type === "touchstart";
+      const startX = isTouch ? e.touches[0].clientX : e.clientX;
+      const startY = isTouch ? e.touches[0].clientY : e.clientY;
+
       drag.current = true;
-      off.current = { x: e.clientX / zoom - pos.x, y: e.clientY / zoom - pos.y };
+      setIsDragging(true);
+      off.current = { x: startX / zoom - pos.x, y: startY / zoom - pos.y };
 
       const onMove = (ev) => {
         if (!drag.current) return;
-        const nx = Math.max(0, Math.min(snap(ev.clientX / zoom - off.current.x), CW - TW));
-        const ny = Math.max(0, Math.min(snap(ev.clientY / zoom - off.current.y), CH - TH));
+        if (isTouch && ev.cancelable) ev.preventDefault();
+
+        const clientX = isTouch ? ev.touches[0].clientX : ev.clientX;
+        const clientY = isTouch ? ev.touches[0].clientY : ev.clientY;
+
+        const nx = Math.max(
+          0,
+          Math.min(snap(clientX / zoom - off.current.x), CW - TW),
+        );
+        const ny = Math.max(
+          0,
+          Math.min(snap(clientY / zoom - off.current.y), CH - TH),
+        );
+
         el.current.style.left = nx + "px";
         el.current.style.top = ny + "px";
         el.current.dataset.x = nx;
@@ -214,76 +355,80 @@ function TableNode({ table, pos, zoom, editMode, onDragEnd, onClick }) {
 
       const onUp = () => {
         drag.current = false;
-        document.removeEventListener("mousemove", onMove);
-        document.removeEventListener("mouseup", onUp);
+        setIsDragging(false);
+        if (isTouch) {
+          document.removeEventListener("touchmove", onMove);
+          document.removeEventListener("touchend", onUp);
+        } else {
+          document.removeEventListener("mousemove", onMove);
+          document.removeEventListener("mouseup", onUp);
+        }
         const fx = parseFloat(el.current.dataset.x ?? pos.x);
         const fy = parseFloat(el.current.dataset.y ?? pos.y);
         onDragEnd(table.table_number, fx, fy);
       };
 
-      document.addEventListener("mousemove", onMove);
-      document.addEventListener("mouseup", onUp);
+      if (isTouch) {
+        document.addEventListener("touchmove", onMove, { passive: false });
+        document.addEventListener("touchend", onUp);
+      } else {
+        document.addEventListener("mousemove", onMove);
+        document.addEventListener("mouseup", onUp);
+      }
     },
-    [editMode, zoom, pos, onDragEnd, table.table_number]
+    [editMode, zoom, pos, onDragEnd, table.table_number],
   );
 
   return (
     <div
       ref={el}
       onMouseDown={onDown}
+      onTouchStart={onDown}
       onClick={(e) => {
-        if (!editMode) { e.stopPropagation(); onClick(table); }
+        if (!editMode) {
+          e.stopPropagation();
+          onClick(table);
+        }
       }}
-      className="absolute select-none group"
+      className={`absolute select-none group transition-all duration-300 ${isDragging ? "scale-110 z-50" : "hover:-translate-y-1 z-10"} ${editMode ? "touch-none" : ""}`}
       style={{
         left: pos.x,
         top: pos.y,
         width: TW,
         height: TH,
-        cursor: editMode ? "grab" : "pointer",
+        cursor: editMode ? (isDragging ? "grabbing" : "grab") : "pointer",
       }}
     >
-      {/* Outer glow ring on hover */}
       <div
-        className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+        className={`relative w-full h-full rounded-[2.5rem] flex flex-col items-center justify-center transition-all duration-300 bg-gradient-to-br ${s.gradient}`}
         style={{
-          boxShadow: `0 0 0 3px ${s.ring}40, 0 0 20px ${s.bg}30`,
-        }}
-      />
-
-      {/* Main circle */}
-      <div
-        className="relative w-full h-full rounded-full flex flex-col items-center justify-center transition-all duration-200"
-        style={{
-          background: `radial-gradient(circle at 35% 35%, ${s.ring}, ${s.bg})`,
-          boxShadow: `0 4px 16px ${s.bg}40, inset 0 1px 0 rgba(255,255,255,0.2)`,
+          boxShadow: isDragging
+            ? `0 25px 50px -12px ${s.shadow}, inset 0 2px 4px rgba(255,255,255,0.4)`
+            : `0 10px 25px -5px ${s.shadow}, inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -4px 8px rgba(0,0,0,0.2)`,
+          border: `1px solid rgba(255,255,255,0.15)`,
         }}
       >
-        {/* Table number — large and prominent */}
-        <span className="text-white font-black text-2xl leading-none drop-shadow-sm">
+        <div className="absolute inset-2 rounded-[2rem] border border-white/10 mix-blend-overlay" />
+
+        <span className="text-white font-black text-4xl leading-none drop-shadow-lg z-10 font-sans tracking-tighter">
           {table.table_number}
         </span>
 
-        {/* Status label */}
-        <span
-          className="mt-1 text-[10px] font-bold tracking-wide uppercase px-2 py-0.5 rounded-full"
-          style={{ background: "rgba(0,0,0,0.25)", color: "rgba(255,255,255,0.9)" }}
-        >
-          {s.label}
-        </span>
+        <div className="absolute bottom-3 px-3 py-1 rounded-full bg-black/30 backdrop-blur-md border border-white/10 z-10">
+          <span className="text-[10px] font-bold tracking-widest uppercase text-white/95">
+            {s.label}
+          </span>
+        </div>
 
-        {/* Active pulse for occupied tables */}
-        {table.status === "open" && (
-          <div
-            className="absolute inset-0 rounded-full animate-ping-slow"
-            style={{ border: `2px solid ${s.ring}`, opacity: 0.3 }}
-          />
+        {table.status === "open" && !editMode && (
+          <div className="absolute -inset-2 rounded-[3rem] border-2 border-rose-400/50 animate-ping-slow pointer-events-none" />
         )}
       </div>
 
-      {/* Edit mode drag indicator */}
       {editMode && (
-        <div className="absolute -top-1 -right-1 w-6 h-6 bg-white rounded-full shadow-lg flex items-center justify-center text-slate-600 opacity-80 group-hover:opacity-100 transition">
+        <div
+          className={`absolute -top-2 -right-2 w-8 h-8 bg-white text-slate-800 rounded-full shadow-xl flex items-center justify-center transition-all ${isDragging ? "scale-125 opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+        >
           {Icons.move}
         </div>
       )}
@@ -294,23 +439,37 @@ function TableNode({ table, pos, zoom, editMode, onDragEnd, onClick }) {
 /* ══════════════════════════════════════════════════════════════════════════
    TOOLBAR BUTTON
    ══════════════════════════════════════════════════════════════════════════ */
-function ToolBtn({ icon, label, onClick, active, variant = "default", className = "" }) {
-  const base = "inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 whitespace-nowrap";
+function ToolBtn({
+  icon,
+  label,
+  onClick,
+  active,
+  variant = "default",
+  className = "",
+}) {
+  const base =
+    "inline-flex items-center justify-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-[0.97]";
   const styles = {
     default: active
-      ? "bg-white/15 text-white ring-1 ring-white/20"
-      : "text-slate-300 hover:bg-white/10 hover:text-white",
-    primary: "bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/25",
+      ? "bg-white/20 text-white shadow-inner border border-white/20"
+      : "text-slate-300 hover:bg-white/10 hover:text-white bg-slate-800/60 border border-slate-700/50",
+    primary:
+      "bg-indigo-500 hover:bg-indigo-400 text-white shadow-lg shadow-indigo-500/25 border border-indigo-400/30",
     warning: active
-      ? "bg-amber-500 text-white shadow-md shadow-amber-500/30 ring-1 ring-amber-400"
-      : "text-slate-300 hover:bg-white/10 hover:text-white",
+      ? "bg-amber-500 text-white shadow-lg shadow-amber-500/30 border border-amber-400"
+      : "text-amber-400/80 hover:bg-amber-500/20 hover:text-amber-300 bg-amber-500/10 border border-amber-500/20",
     ghost: "text-slate-400 hover:text-white hover:bg-white/10",
   };
 
   return (
-    <button onClick={onClick} className={`${base} ${styles[variant]} ${className}`}>
+    <button
+      onClick={onClick}
+      className={`${base} ${styles[variant]} ${className}`}
+    >
       {icon}
-      {label && <span>{label}</span>}
+      {label && (
+        <span className="hidden sm:inline-block tracking-wide">{label}</span>
+      )}
     </button>
   );
 }
@@ -323,7 +482,7 @@ export default function TableLayoutPage() {
   const [positions, setPositions] = useState({});
   const [loading, setLoading] = useState(true);
   const [editMode, setEditMode] = useState(false);
-  const [zoom, setZoom] = useState(0.75);
+  const [zoom, setZoom] = useState(0.8);
   const [selected, setSelected] = useState(null);
   const [showQR, setShowQR] = useState(false);
   const [qr64, setQr64] = useState("");
@@ -332,14 +491,18 @@ export default function TableLayoutPage() {
   const [toast, setToast] = useState(null);
   const [confirmReset, setConfirmReset] = useState(false);
 
-  const notify = useCallback((msg, type) => setToast({ message: msg, type }), []);
+  const notify = useCallback(
+    (msg, type) => setToast({ message: msg, type }),
+    [],
+  );
 
-  /* — positions persistence — */
   useEffect(() => {
     try {
       const raw = localStorage.getItem(LS_KEY);
       if (raw) setPositions(JSON.parse(raw));
-    } catch { /* noop */ }
+    } catch {
+      /* noop */
+    }
   }, []);
 
   const savePos = useCallback((next) => {
@@ -347,23 +510,26 @@ export default function TableLayoutPage() {
     localStorage.setItem(LS_KEY, JSON.stringify(next));
   }, []);
 
-  /* — fetch tables — */
   const fetchTables = useCallback(async () => {
     try {
       setLoading(true);
-      const { data } = await axios.get(`${API}/tables/gettable`, { withCredentials: true });
-      const sorted = data.tables.sort((a, b) => a.table_number - b.table_number);
+      const { data } = await axios.get(`${API}/tables/gettable`, {
+        withCredentials: true,
+      });
+      const sorted = data.tables.sort(
+        (a, b) => a.table_number - b.table_number,
+      );
       setTables(sorted);
 
       setPositions((prev) => {
         const next = { ...prev };
         let changed = false;
-        const cols = Math.floor(CW / (TW + 40));
+        const cols = Math.floor(CW / (TW + 50));
         sorted.forEach((t, i) => {
           if (next[t.table_number] === undefined) {
             next[t.table_number] = {
-              x: snap(60 + (i % cols) * (TW + 40)),
-              y: snap(60 + Math.floor(i / cols) * (TH + 40)),
+              x: snap(80 + (i % cols) * (TW + 50)),
+              y: snap(80 + Math.floor(i / cols) * (TH + 50)),
             };
             changed = true;
           }
@@ -378,32 +544,48 @@ export default function TableLayoutPage() {
     }
   }, [notify]);
 
-  useEffect(() => { fetchTables(); }, [fetchTables]);
+  useEffect(() => {
+    fetchTables();
+  }, [fetchTables]);
 
-  /* — drag end — */
   const handleDragEnd = useCallback(
     (num, x, y) => savePos({ ...positions, [num]: { x, y } }),
-    [positions, savePos]
+    [positions, savePos],
   );
 
-  /* — zoom — */
   const zIn = () => setZoom((z) => Math.min(z + Z_STEP, MAX_Z));
   const zOut = () => setZoom((z) => Math.max(z - Z_STEP, MIN_Z));
-  const zReset = () => setZoom(0.75);
+  const zReset = () => setZoom(0.8);
 
   const onWheel = useCallback((e) => {
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
-      setZoom((z) => Math.max(MIN_Z, Math.min(MAX_Z, z + (e.deltaY < 0 ? Z_STEP : -Z_STEP))));
+      setZoom((z) =>
+        Math.max(MIN_Z, Math.min(MAX_Z, z + (e.deltaY < 0 ? Z_STEP : -Z_STEP))),
+      );
     }
   }, []);
 
-  /* — table actions — */
   const openTable = async (num) => {
     try {
       setBusy(true);
-      const { data } = await axios.post(`${API}/tables/opentable`, { number: num }, { withCredentials: true });
-      setTables((p) => p.map((t) => t.table_number === num ? { ...t, status: "open", fullurl: data.fullurl, qr_code_url: data.qr_code_url } : t));
+      const { data } = await axios.post(
+        `${API}/tables/opentable`,
+        { number: num },
+        { withCredentials: true },
+      );
+      setTables((p) =>
+        p.map((t) =>
+          t.table_number === num
+            ? {
+                ...t,
+                status: "open",
+                fullurl: data.fullurl,
+                qr_code_url: data.qr_code_url,
+              }
+            : t,
+        ),
+      );
       setFullurl(data.fullurl);
       setQr64(data.qr_code_url);
       setShowQR(true);
@@ -411,156 +593,178 @@ export default function TableLayoutPage() {
       notify(`เปิดโต๊ะ ${num} สำเร็จ`, "success");
     } catch (err) {
       notify(err.response?.data?.message || "ไม่สามารถเปิดโต๊ะได้", "error");
-    } finally { setBusy(false); }
+    } finally {
+      setBusy(false);
+    }
   };
 
   const closeTable = async (num) => {
     try {
       setBusy(true);
-      const { data } = await axios.post(`${API}/tables/closetable`, { number: num }, { withCredentials: true });
-      setTables((p) => p.map((t) => t.table_number === num ? { ...t, status: "available", fullurl: null, qr_code_url: null } : t));
+      const { data } = await axios.post(
+        `${API}/tables/closetable`,
+        { number: num },
+        { withCredentials: true },
+      );
+      setTables((p) =>
+        p.map((t) =>
+          t.table_number === num
+            ? { ...t, status: "available", fullurl: null, qr_code_url: null }
+            : t,
+        ),
+      );
       setSelected(null);
       notify(data.message || `ปิดโต๊ะ ${num} สำเร็จ`, "success");
-    } catch { notify("ไม่สามารถปิดโต๊ะได้", "error"); }
-    finally { setBusy(false); }
+    } catch {
+      notify("ไม่สามารถปิดโต๊ะได้", "error");
+    } finally {
+      setBusy(false);
+    }
   };
 
   const addTable = async () => {
     try {
-      const { data } = await axios.post(`${API}/tables/addtable`, {}, { withCredentials: true });
+      const { data } = await axios.post(
+        `${API}/tables/addtable`,
+        {},
+        { withCredentials: true },
+      );
       notify(data.message || "เพิ่มโต๊ะสำเร็จ", "success");
       await fetchTables();
-    } catch { notify("ไม่สามารถเพิ่มโต๊ะได้", "error"); }
+    } catch {
+      notify("ไม่สามารถเพิ่มโต๊ะได้", "error");
+    }
   };
 
   const resetLayout = () => {
     const next = {};
-    const cols = Math.floor(CW / (TW + 40));
+    const cols = Math.floor(CW / (TW + 50));
     tables.forEach((t, i) => {
       next[t.table_number] = {
-        x: snap(60 + (i % cols) * (TW + 40)),
-        y: snap(60 + Math.floor(i / cols) * (TH + 40)),
+        x: snap(80 + (i % cols) * (TW + 50)),
+        y: snap(80 + Math.floor(i / cols) * (TH + 50)),
       };
     });
     savePos(next);
     setConfirmReset(false);
-    notify("รีเซ็ตผังโต๊ะเรียบร้อย", "info");
+    notify("จัดเรียงโต๊ะใหม่เรียบร้อย", "info");
   };
 
-  /* — counts — */
-  const cnt = (s) => tables.filter((t) => t.status === s).length;
-
-  /* ────── LOADING ────── */
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: "#0f172a" }}>
+      <div className="min-h-screen flex items-center justify-center bg-[#0B1120]">
         <div className="text-center">
-          <div className="relative w-16 h-16 mx-auto mb-5">
-            <div className="absolute inset-0 rounded-full border-[3px] border-slate-700" />
-            <div className="absolute inset-0 rounded-full border-[3px] border-transparent border-t-indigo-400 animate-spin" />
-          </div>
-          <p className="text-slate-400 text-sm font-medium">กำลังโหลดข้อมูลโต๊ะ...</p>
+          <div className="w-16 h-16 border-4 border-indigo-500/20 border-t-indigo-500 rounded-full animate-spin mx-auto mb-6 shadow-lg shadow-indigo-500/20" />
+          <p className="text-indigo-200 text-sm font-medium tracking-widest animate-pulse">
+            LOADING FLOOR PLAN...
+          </p>
         </div>
       </div>
     );
   }
 
-  /* ────── RENDER ────── */
   return (
-    <div className="h-screen flex flex-col overflow-hidden" style={{ background: "#0f172a", color: "#f1f5f9" }}>
-      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+    <div className="h-screen flex flex-col overflow-hidden bg-[#0B1120] text-slate-100 font-sans selection:bg-indigo-500/30">
+      {toast && (
+        <Toast
+          message={toast.message}
+          type={toast.type}
+          onClose={() => setToast(null)}
+        />
+      )}
 
-      {/* ═══ HEADER ═══ */}
-      <header className="flex-none z-20" style={{ background: "rgba(15,23,42,0.95)", borderBottom: "1px solid rgba(255,255,255,0.06)", backdropFilter: "blur(16px)" }}>
-        <div className="px-5 py-3 flex items-center gap-5">
-          {/* Title section */}
-          <div className="flex items-center gap-3 mr-auto">
-            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "rgba(99,102,241,0.15)" }}>
-              <span className="text-indigo-400">{Icons.table}</span>
+      <header className="flex-none z-20 bg-[#0B1120]/70 backdrop-blur-xl border-b border-white/10 shadow-2xl shadow-black/50">
+        <div className="px-5 py-4 flex items-center justify-between gap-4 overflow-x-auto hide-scrollbar">
+          <div className="flex items-center gap-4 shrink-0">
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-lg shadow-indigo-500/30">
+              {Icons.table}
             </div>
             <div>
-              <h1 className="text-base font-bold text-white leading-tight">ผังโต๊ะร้าน</h1>
-              <p className="text-[11px] text-slate-500 font-medium">Table Floor Plan</p>
+              <h1 className="text-lg font-bold text-white tracking-tight">
+                ผังโต๊ะอาหาร
+              </h1>
+              <p className="text-xs text-indigo-200/70 font-medium tracking-wide uppercase">
+                Restaurant Layout
+              </p>
             </div>
           </div>
 
-          {/* Quick stats */}
-          <div className="hidden md:flex items-center gap-1.5">
-            {[
-              { label: "ทั้งหมด", val: tables.length, color: "#64748b" },
-              { label: "ว่าง", val: cnt("available"), color: "#10b981" },
-              { label: "ใช้งาน", val: cnt("open"), color: "#ef4444" },
-              { label: "จอง", val: cnt("reserved"), color: "#f59e0b" },
-            ].map((s) => (
-              <div
-                key={s.label}
-                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-semibold"
-                style={{ background: `${s.color}15`, color: s.color }}
+          <div className="flex items-center gap-3 md:gap-4 shrink-0">
+            <div className="hidden lg:flex items-center rounded-xl bg-slate-800/50 border border-slate-700 p-1">
+              <button
+                onClick={zOut}
+                className="p-2 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
               >
-                <div className="w-1.5 h-1.5 rounded-full" style={{ background: s.color }} />
-                {s.val}
-                <span className="text-[10px] opacity-70">{s.label}</span>
+                {Icons.zoomOut}
+              </button>
+              <div className="px-3 py-1 font-mono text-xs text-slate-300 min-w-[60px] text-center font-semibold">
+                {Math.round(zoom * 100)}%
               </div>
-            ))}
-          </div>
+              <button
+                onClick={zIn}
+                className="p-2 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-colors"
+              >
+                {Icons.zoomIn}
+              </button>
+            </div>
 
-          {/* Divider */}
-          <div className="w-px h-7 bg-white/10 hidden lg:block" />
+            <div className="w-px h-8 bg-slate-700 hidden lg:block mx-1" />
 
-          {/* Zoom controls */}
-          <div className="hidden sm:flex items-center rounded-lg overflow-hidden" style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <button onClick={zOut} className="px-2.5 py-1.5 hover:bg-white/10 transition text-slate-400 hover:text-white">{Icons.zoomOut}</button>
-            <button onClick={zReset} className="px-3 py-1.5 border-x border-white/8 hover:bg-white/10 transition text-xs font-mono text-slate-300 min-w-[50px] text-center">
-              {Math.round(zoom * 100)}%
-            </button>
-            <button onClick={zIn} className="px-2.5 py-1.5 hover:bg-white/10 transition text-slate-400 hover:text-white">{Icons.zoomIn}</button>
-          </div>
-
-          {/* Action buttons */}
-          <ToolBtn
-            icon={editMode ? Icons.lock : Icons.edit}
-            label={editMode ? "บันทึกผัง" : "จัดผังโต๊ะ"}
-            onClick={() => {
-              if (editMode) notify("บันทึกผังโต๊ะเรียบร้อย", "success");
-              setEditMode(!editMode);
-            }}
-            variant="warning"
-            active={editMode}
-          />
-
-          {editMode && (
             <ToolBtn
-              icon={Icons.reset}
-              label="รีเซ็ต"
-              onClick={() => setConfirmReset(true)}
-              variant="ghost"
+              icon={editMode ? Icons.lock : Icons.edit}
+              label={editMode ? "บันทึกผัง" : "จัดผังใหม่"}
+              onClick={() => {
+                if (editMode) notify("บันทึกตำแหน่งโต๊ะเรียบร้อย", "success");
+                setEditMode(!editMode);
+              }}
+              variant="warning"
+              active={editMode}
             />
-          )}
 
-          <ToolBtn icon={Icons.plus} label="เพิ่มโต๊ะ" onClick={addTable} variant="primary" />
+            {editMode && (
+              <ToolBtn
+                icon={Icons.reset}
+                label="จัดเรียงใหม่"
+                onClick={() => setConfirmReset(true)}
+                variant="ghost"
+              />
+            )}
 
-          <ToolBtn
-            icon={Icons.refresh}
-            onClick={async () => { await fetchTables(); notify("รีเฟรชข้อมูลเรียบร้อย", "info"); }}
-            variant="ghost"
-          />
+            <ToolBtn
+              icon={Icons.plus}
+              label="เพิ่มโต๊ะ"
+              onClick={addTable}
+              variant="primary"
+            />
+            <ToolBtn
+              icon={Icons.refresh}
+              onClick={async () => {
+                await fetchTables();
+                notify("อัปเดตข้อมูลแล้ว", "info");
+              }}
+              variant="ghost"
+              className="px-3"
+            />
+          </div>
         </div>
 
-        {/* Edit mode banner */}
         {editMode && (
-          <div className="px-5 py-2 flex items-center justify-center gap-2 text-xs font-semibold" style={{ background: "rgba(245,158,11,0.1)", borderTop: "1px solid rgba(245,158,11,0.15)", color: "#fbbf24" }}>
-            <span className="inline-block w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-            โหมดจัดผังโต๊ะ — ลากโต๊ะเพื่อจัดวาง เสร็จแล้วกด &quot;บันทึกผัง&quot;
+          <div className="bg-amber-500/10 border-b border-amber-500/20 py-2.5 flex justify-center items-center gap-3">
+            <span className="w-2.5 h-2.5 rounded-full bg-amber-400 animate-pulse shadow-[0_0_10px_rgba(251,191,36,0.8)]" />
+            <span className="text-xs font-semibold text-amber-300 tracking-wide">
+              โหมดแก้ไข : ลากเพื่อย้ายตำแหน่งโต๊ะ
+            </span>
           </div>
         )}
       </header>
 
-      {/* ═══ CANVAS ═══ */}
       <main
-        className="flex-1 overflow-auto relative"
-        style={{ cursor: "default" }}
+        className="flex-1 overflow-auto relative touch-pan-x touch-pan-y"
+        style={{ cursor: editMode ? "default" : "grab" }}
         onWheel={onWheel}
       >
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-indigo-500/10 rounded-full blur-[120px] pointer-events-none" />
+
         <div
           style={{
             transform: `scale(${zoom})`,
@@ -568,28 +772,33 @@ export default function TableLayoutPage() {
             width: CW,
             height: CH,
             position: "relative",
-            margin: "20px",
+            margin: "40px",
+            transition: "transform 0.15s cubic-bezier(0.4, 0, 0.2, 1)",
           }}
         >
-          {/* Grid pattern */}
-          <svg className="absolute inset-0 pointer-events-none" width={CW} height={CH}>
+          <svg
+            className="absolute inset-0 pointer-events-none opacity-40"
+            width={CW}
+            height={CH}
+          >
             <defs>
-              <pattern id="dots" width={GRID} height={GRID} patternUnits="userSpaceOnUse">
-                <circle cx="1" cy="1" r="0.6" fill="rgba(148,163,184,0.08)" />
+              <pattern
+                id="grid"
+                width={GRID * 2}
+                height={GRID * 2}
+                patternUnits="userSpaceOnUse"
+              >
+                <circle cx="2" cy="2" r="1.5" fill="#475569" />
               </pattern>
             </defs>
-            <rect width="100%" height="100%" fill="url(#dots)" />
+            <rect width="100%" height="100%" fill="url(#grid)" />
           </svg>
 
-          {/* Boundary */}
-          <div className="absolute inset-0 rounded-2xl pointer-events-none" style={{ border: "1px solid rgba(255,255,255,0.04)" }} />
-
-          {/* Tables */}
           {tables.map((t) => (
             <TableNode
               key={t.table_number}
               table={t}
-              pos={positions[t.table_number] || { x: 60, y: 60 }}
+              pos={positions[t.table_number] || { x: 80, y: 80 }}
               zoom={zoom}
               editMode={editMode}
               onDragEnd={handleDragEnd}
@@ -599,140 +808,84 @@ export default function TableLayoutPage() {
         </div>
       </main>
 
-      {/* ═══ BOTTOM BAR — Legend + Shortcuts ═══ */}
-      <footer className="flex-none z-20 px-5 py-2 flex items-center justify-between" style={{ background: "rgba(15,23,42,0.95)", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
-        <div className="flex items-center gap-4">
+      <footer className="flex-none z-20 px-6 py-3.5 flex items-center justify-between bg-[#0B1120]/80 backdrop-blur-xl border-t border-white/10 overflow-x-auto hide-scrollbar">
+        <div className="flex items-center gap-5 shrink-0">
           {Object.entries(STATUS).map(([, cfg]) => (
-            <div key={cfg.label} className="flex items-center gap-1.5">
-              <div className="w-2.5 h-2.5 rounded-full" style={{ background: cfg.bg }} />
-              <span className="text-[11px] text-slate-400 font-medium">{cfg.label}</span>
+            <div key={cfg.label} className="flex items-center gap-2">
+              <div
+                className="w-3.5 h-3.5 rounded-full border border-white/20"
+                style={{
+                  background: cfg.bg,
+                  boxShadow: `0 0 10px ${cfg.bg}60`,
+                }}
+              />
+              <span className="text-xs text-slate-300 font-semibold tracking-wide">
+                {cfg.label}
+              </span>
             </div>
           ))}
         </div>
-        <div className="text-[11px] text-slate-500 hidden sm:flex items-center gap-3">
-          <span><kbd className="px-1.5 py-0.5 rounded bg-slate-700/60 text-slate-400 font-mono text-[10px]">Ctrl</kbd> + Scroll = Zoom</span>
-          <span>Scroll = เลื่อนผัง</span>
-        </div>
       </footer>
 
-      {/* ═══ QR MODAL ═══ */}
-      {showQR && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}>
-          <div className="w-full max-w-sm rounded-2xl p-7 animate-modal-in" style={{ background: "#1e293b", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <div className="text-center mb-6">
-              <div className="w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center text-emerald-400" style={{ background: "rgba(16,185,129,0.15)" }}>
-                {Icons.qr}
-              </div>
-              <h2 className="text-lg font-bold text-white">QR Code สั่งอาหาร</h2>
-              <p className="text-sm text-slate-400 mt-1">ให้ลูกค้าสแกนเพื่อเริ่มสั่งอาหาร</p>
-            </div>
-
-            <div className="bg-white rounded-xl p-5 mb-4">
-              <img src={qr64} alt="QR Code" className="w-44 h-44 mx-auto" />
-            </div>
-
-            <div className="mb-5 px-3 py-2 rounded-lg text-xs font-mono text-slate-400 break-all" style={{ background: "rgba(255,255,255,0.04)" }}>
-              {fullurl}
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                onClick={() => setShowQR(false)}
-                className="flex-1 py-2.5 rounded-xl font-bold text-sm text-white transition-all hover:opacity-90"
-                style={{ background: "linear-gradient(135deg, #6366f1, #8b5cf6)" }}
-              >
-                เสร็จสิ้น
-              </button>
-              <button
-                onClick={() => window.print()}
-                className="px-4 py-2.5 rounded-xl font-bold text-sm text-slate-300 transition hover:bg-white/10"
-                style={{ background: "rgba(255,255,255,0.06)" }}
-              >
-                {Icons.print}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ═══ TABLE DETAIL MODAL ═══ */}
+      {/* TABLE DETAIL MODAL */}
       {selected && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.7)", backdropFilter: "blur(8px)" }}>
-          <div className="w-full max-w-sm rounded-2xl animate-modal-in" style={{ background: "#1e293b", border: "1px solid rgba(255,255,255,0.08)" }}>
-            {/* Header with table visual */}
-            <div className="p-6 pb-4">
-              <div className="flex items-start justify-between">
-                <div className="flex items-center gap-4">
-                  {/* Mini table circle */}
-                  <div
-                    className="w-14 h-14 rounded-full flex items-center justify-center text-white font-black text-xl flex-shrink-0"
-                    style={{
-                      background: `radial-gradient(circle at 35% 35%, ${getS(selected.status).ring}, ${getS(selected.status).bg})`,
-                      boxShadow: `0 4px 12px ${getS(selected.status).bg}50`,
-                    }}
-                  >
-                    {selected.table_number}
-                  </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-white">โต๊ะ {selected.table_number}</h2>
-                    <div className="flex items-center gap-1.5 mt-1">
-                      <div className="w-2 h-2 rounded-full" style={{ background: getS(selected.status).bg }} />
-                      <span className="text-sm font-medium" style={{ color: getS(selected.status).ring }}>
-                        {getS(selected.status).label}
-                      </span>
-                    </div>
-                  </div>
-                </div>
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 sm:p-0 bg-black/60 backdrop-blur-md">
+          <div className="w-full sm:max-w-md rounded-[2rem] animate-modal-in bg-slate-900 border border-white/10 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.7)] overflow-hidden">
+            <div
+              className={`p-8 pb-6 bg-gradient-to-br ${getS(selected.status).gradient} relative overflow-hidden`}
+            >
+              <div className="absolute inset-0 bg-black/20" />
+              <div className="absolute top-0 right-0 p-4 z-10">
                 <button
                   onClick={() => setSelected(null)}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-white hover:bg-white/10 transition"
+                  className="w-10 h-10 rounded-full flex items-center justify-center bg-black/20 text-white/80 hover:bg-black/40 hover:text-white transition-all backdrop-blur-sm"
                 >
                   {Icons.x}
                 </button>
               </div>
-            </div>
 
-            {/* Info rows */}
-            <div className="px-6 pb-4">
-              <div className="rounded-xl p-3 space-y-2.5" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)" }}>
-                {Boolean(selected.guestCount) && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-slate-400">จำนวนลูกค้า</span>
-                    <span className="text-white font-semibold">{selected.guestCount} คน</span>
-                  </div>
-                )}
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">QR Code</span>
-                  <span className={`font-semibold ${selected.qr_code_url ? "text-emerald-400" : "text-slate-500"}`}>
-                    {selected.qr_code_url ? "พร้อมใช้งาน" : "ยังไม่ได้สร้าง"}
+              <div className="relative z-10 flex flex-col items-center text-center">
+                <div className="w-24 h-24 rounded-full bg-white/10 border-2 border-white/30 backdrop-blur-md flex items-center justify-center text-5xl font-black text-white shadow-2xl mb-4">
+                  {selected.table_number}
+                </div>
+                <h2 className="text-2xl font-bold text-white mb-1">
+                  โต๊ะหมายเลข {selected.table_number}
+                </h2>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/30 backdrop-blur-sm">
+                  <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                  <span className="text-sm font-bold text-white uppercase tracking-widest">
+                    {getS(selected.status).label}
                   </span>
                 </div>
               </div>
             </div>
 
-            {/* Actions */}
-            <div className="px-6 pb-6 space-y-2.5">
-              {selected.status === "available" && (
+            <div className="p-8 space-y-4 bg-slate-900 relative">
+              {selected.status === "available" ? (
                 <button
                   onClick={() => openTable(selected.table_number)}
                   disabled={busy}
-                  className="w-full py-3 rounded-xl font-bold text-sm text-white transition-all hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-40"
-                  style={{ background: "linear-gradient(135deg, #ef4444, #dc2626)" }}
+                  className="w-full py-4 rounded-2xl font-bold text-base text-white transition-all active:scale-[0.98] flex items-center justify-center gap-3 disabled:opacity-50 bg-emerald-500 hover:bg-emerald-400 shadow-lg shadow-emerald-500/25"
                 >
-                  {busy ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : Icons.utensils}
-                  {busy ? "กำลังดำเนินการ..." : "เปิดโต๊ะ — รับลูกค้า"}
+                  {busy ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    Icons.utensils
+                  )}
+                  {busy ? "กำลังเปิดโต๊ะ..." : "เปิดโต๊ะรับลูกค้า"}
                 </button>
-              )}
-
-              {selected.status !== "available" && (
+              ) : (
                 <button
                   onClick={() => closeTable(selected.table_number)}
                   disabled={busy}
-                  className="w-full py-3 rounded-xl font-bold text-sm text-white transition-all hover:opacity-90 flex items-center justify-center gap-2 disabled:opacity-40"
-                  style={{ background: "linear-gradient(135deg, #10b981, #059669)" }}
+                  className="w-full py-4 rounded-2xl font-bold text-base text-white transition-all active:scale-[0.98] flex items-center justify-center gap-3 disabled:opacity-50 bg-rose-500 hover:bg-rose-400 shadow-lg shadow-rose-500/25"
                 >
-                  {busy ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : Icons.check}
-                  {busy ? "กำลังดำเนินการ..." : "ปิดโต๊ะ — ว่างพร้อมใช้"}
+                  {busy ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    Icons.check
+                  )}
+                  {busy ? "กำลังเคลียร์โต๊ะ..." : "เคลียร์โต๊ะ / เช็คบิล"}
                 </button>
               )}
 
@@ -744,11 +897,10 @@ export default function TableLayoutPage() {
                     setShowQR(true);
                     setSelected(null);
                   }}
-                  className="w-full py-3 rounded-xl font-bold text-sm text-white flex items-center justify-center gap-2 transition hover:opacity-90"
-                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)" }}
+                  className="w-full py-4 rounded-2xl font-bold text-base text-indigo-300 flex items-center justify-center gap-3 transition-all active:scale-[0.98] bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20"
                 >
                   {Icons.qr}
-                  <span>แสดง QR Code</span>
+                  <span>ดู QR Code สั่งอาหาร</span>
                 </button>
               )}
             </div>
@@ -756,53 +908,143 @@ export default function TableLayoutPage() {
         </div>
       )}
 
-      {/* ═══ CONFIRM RESET DIALOG ═══ */}
-      {confirmReset && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)" }}>
-          <div className="w-full max-w-xs rounded-2xl p-6 text-center animate-modal-in" style={{ background: "#1e293b", border: "1px solid rgba(255,255,255,0.08)" }}>
-            <div className="w-12 h-12 rounded-xl mx-auto mb-3 flex items-center justify-center text-amber-400" style={{ background: "rgba(245,158,11,0.15)" }}>
-              {Icons.reset}
+      {/* QR MODAL (Refined & Added Link Back) */}
+      {showQR && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
+          <div className="w-full max-w-sm rounded-[2rem] p-8 animate-modal-in bg-slate-900 border border-white/10 shadow-2xl text-center">
+            <div className="w-16 h-16 rounded-2xl mx-auto mb-5 flex items-center justify-center text-white bg-gradient-to-br from-indigo-500 to-purple-600 shadow-lg">
+              {Icons.qr}
             </div>
-            <h3 className="text-base font-bold text-white mb-1">รีเซ็ตผังโต๊ะ?</h3>
-            <p className="text-sm text-slate-400 mb-5">ตำแหน่งโต๊ะทั้งหมดจะถูกจัดเรียงใหม่</p>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setConfirmReset(false)}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold text-slate-300 transition hover:bg-white/10"
-                style={{ background: "rgba(255,255,255,0.06)" }}
+            <h2 className="text-xl font-bold text-white mb-1">
+              สแกนเพื่อสั่งอาหาร
+            </h2>
+            <p className="text-sm text-slate-400 mb-6">
+              QR Code สำหรับโต๊ะปัจจุบัน
+            </p>
+
+            <div className="bg-white rounded-2xl p-4 mb-5 shadow-inner mx-auto inline-block">
+              <img src={qr64} alt="QR" className="w-48 h-48 object-contain" />
+            </div>
+
+            {/* เพิ่ม Link พร้อมปุ่ม Copy กลับมาแล้วครับ! */}
+            <div className="mb-6 px-4 py-3 rounded-xl bg-slate-800/80 border border-slate-700 flex items-center justify-between gap-3 shadow-inner">
+              <span
+                className="text-xs font-mono text-slate-300 truncate text-left w-full"
+                title={fullurl}
               >
-                ยกเลิก
+                {fullurl}
+              </span>
+              <button
+                onClick={() => {
+                  navigator.clipboard.writeText(fullurl);
+                  notify("คัดลอกลิงก์แล้ว!", "success");
+                }}
+                className="p-2 rounded-lg bg-slate-700 hover:bg-slate-600 text-indigo-300 transition-colors shrink-0"
+                title="คัดลอกลิงก์"
+              >
+                {Icons.copy}
+              </button>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowQR(false)}
+                className="flex-1 py-3.5 rounded-xl font-bold text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 transition-colors"
+              >
+                ปิด
               </button>
               <button
-                onClick={resetLayout}
-                className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white transition hover:opacity-90"
-                style={{ background: "linear-gradient(135deg, #f59e0b, #d97706)" }}
+                onClick={() => window.print()}
+                className="flex-1 py-3.5 rounded-xl font-bold text-white bg-indigo-500 hover:bg-indigo-400 shadow-lg shadow-indigo-500/30 transition-colors flex items-center justify-center gap-2"
               >
-                รีเซ็ต
+                {Icons.print} พิมพ์
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ═══ STYLES ═══ */}
+      {/* CONFIRM RESET DIALOG */}
+      {confirmReset && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-xs rounded-3xl p-8 text-center animate-modal-in bg-slate-900 border border-slate-700 shadow-2xl">
+            <div className="w-16 h-16 rounded-full mx-auto mb-5 flex items-center justify-center text-white bg-amber-500 shadow-lg shadow-amber-500/30">
+              {Icons.reset}
+            </div>
+            <h3 className="text-xl font-bold text-white mb-2">
+              จัดเรียงใหม่ทั้งหมด?
+            </h3>
+            <p className="text-sm text-slate-400 mb-8">
+              ตำแหน่งโต๊ะที่คุณจัดไว้จะถูกล้างและเรียงใหม่ตามค่าเริ่มต้น
+            </p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={resetLayout}
+                className="w-full py-3.5 rounded-xl font-bold text-white bg-amber-500 hover:bg-amber-400 shadow-lg shadow-amber-500/25 transition-all"
+              >
+                ยืนยันการจัดเรียง
+              </button>
+              <button
+                onClick={() => setConfirmReset(false)}
+                className="w-full py-3.5 rounded-xl font-semibold text-slate-300 bg-slate-800 hover:bg-slate-700 transition-all"
+              >
+                ยกเลิก
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style jsx>{`
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+
         @keyframes toast-in {
-          from { transform: translateX(120%); opacity: 0; }
-          to { transform: translateX(0); opacity: 1; }
+          0% {
+            transform: translate(-50%, -20px) scale(0.9);
+            opacity: 0;
+          }
+          100% {
+            transform: translate(-50%, 0) scale(1);
+            opacity: 1;
+          }
         }
         @keyframes modal-in {
-          from { transform: scale(0.95) translateY(8px); opacity: 0; }
-          to { transform: scale(1) translateY(0); opacity: 1; }
+          0% {
+            transform: scale(0.95) translateY(20px);
+            opacity: 0;
+          }
+          100% {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+          }
         }
         @keyframes ping-slow {
-          0% { transform: scale(1); opacity: 0.3; }
-          50% { transform: scale(1.15); opacity: 0; }
-          100% { transform: scale(1); opacity: 0; }
+          0% {
+            transform: scale(1);
+            opacity: 1;
+            border-width: 2px;
+          }
+          100% {
+            transform: scale(1.3);
+            opacity: 0;
+            border-width: 8px;
+          }
         }
-        .animate-toast-in { animation: toast-in 0.35s cubic-bezier(0.16,1,0.3,1); }
-        .animate-modal-in { animation: modal-in 0.25s cubic-bezier(0.16,1,0.3,1); }
-        .animate-ping-slow { animation: ping-slow 2.5s ease-in-out infinite; }
+        .animate-toast-in {
+          animation: toast-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+        .animate-modal-in {
+          animation: modal-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+        .animate-ping-slow {
+          animation: ping-slow 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+        }
       `}</style>
     </div>
   );
