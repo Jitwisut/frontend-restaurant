@@ -273,10 +273,14 @@ export default function TableManagement() {
   const closeTable = async (number) => {
     try {
       setActionLoading(true);
+      const token = sessionStorage.getItem("auth");
       const { data } = await axios.post(
         `${API_BASE}/tables/closetable`,
         { number },
-        { withCredentials: true }
+        { 
+          withCredentials: true,
+          headers: { Authorization: `Bearer ${token}` }
+        }
       );
 
       setTables((prev) =>
@@ -330,8 +334,32 @@ export default function TableManagement() {
 
       {/* === QR Modal === */}
       {showQR && (
-        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-3xl shadow-2xl p-8 text-center max-w-sm w-full animate-scale-in">
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50"
+          style={{
+            position: "fixed",
+            inset: 0,
+            width: "100vw",
+            height: "100vh",
+            minWidth: "100vw",
+            padding: 24,
+            boxSizing: "border-box",
+          }}
+        >
+          <div
+            className="bg-white rounded-3xl shadow-2xl text-center animate-scale-in"
+            style={{
+              width: 520,
+              maxWidth: "calc(100vw - 48px)",
+              minWidth: "min(360px, calc(100vw - 48px))",
+              maxHeight: "92vh",
+              overflowY: "auto",
+              overflowX: "hidden",
+              padding: 32,
+              boxSizing: "border-box",
+              flexShrink: 0,
+            }}
+          >
             <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
               <span className="text-2xl text-white">📱</span>
             </div>
@@ -346,7 +374,17 @@ export default function TableManagement() {
                 alt="QR Code"
                 className="w-48 h-48 mx-auto rounded-xl shadow-lg bg-white p-2"
               />
-              <p className="mt-4 text-xs font-mono break-all text-gray-600 bg-white/70 p-2 rounded-lg">
+              <p
+                className="mt-4 text-xs font-mono text-gray-600 bg-white/70 p-2 rounded-lg"
+                style={{
+                  width: "100%",
+                  boxSizing: "border-box",
+                  whiteSpace: "normal",
+                  overflowWrap: "anywhere",
+                  wordBreak: "break-word",
+                  lineHeight: 1.5,
+                }}
+              >
                 {fullurl}
               </p>
             </div>
